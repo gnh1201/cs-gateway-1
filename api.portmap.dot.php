@@ -5,11 +5,16 @@ $format = get_requested_value("format");
 $device_id = get_requested_value("device_id");
 $start_dt = get_requested_value("start_dt");
 $end_dt = get_requested_value("end_dt");
+$adjust = get_requested_value("adjust");
 $mode = get_requested_value("mode");
 
 if(empty($device_id)) {
     set_error("device_id is required");
     show_errors();
+}
+
+if(empty($adjust)) {
+    $adjust = "-1h";
 }
 
 if(empty($end_dt)) {
@@ -18,7 +23,7 @@ if(empty($end_dt)) {
 
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
-        "adjust" => "-1h"
+        "adjust" => $adjust
     ));
 }
 
