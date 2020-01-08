@@ -84,7 +84,7 @@ $_tbl1 = exec_db_temp_start($sql);
 // netstat (windows)
 $sql = "
 select
-    left(a.address, a.address - length(a.port) - 1) as address,
+    left(a.address, length(a.address) - length(a.port) - 1) as address,
     a.port as port,
     a.state as state,
     a.pid as pid
