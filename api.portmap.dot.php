@@ -82,9 +82,10 @@ group by a.pos_y, a.datetime
 $_tbl1 = exec_db_temp_start($sql);
 
 // netstat (windows)
+$_stmt = "left(a.address, length(a.address) - length(a.port) - 1)";
 $sql = "
 select
-    left(a.address, length(a.address) - length(a.port) - 1) as address,
+    if({$_stmt} = '[::]', '0.0.0.0', if({$_stmt} = '[::1]', '127.0.0.1', {$_stmt})) as address,
     a.port as port,
     a.state as state,
     a.pid as pid
@@ -106,9 +107,10 @@ exit;
 $_tbl2 = exec_db_temp_start($sql);
 
 // netstat (linux)
+$_stmt = "left(a.address, length(a.address) - length(a.port) - 1)";
 $sql = "
 select
-    left(a.address, length(a.address) - length(a.port) - 1) as address,
+    if({$_stmt} = '[::]', '0.0.0.0', if({$_stmt} = '[::1]', '127.0.0.1', {$_stmt})) as address,
     a.port as port,
     a.state as state,
     a.pid as pid,
@@ -141,10 +143,6 @@ if($device['platform'] == "windows") {
 } elseif($device['platform'] == "linux")  {
     $sql = "select process_name, address, port, state, pid from $_tbl3";
 }
-$rows = exec_db_fetch_all($sql);
-var_dump($rows);
-exit;
-
 $_tbl4 = exec_db_temp_start($sql);
 
 // step 2
