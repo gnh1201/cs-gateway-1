@@ -30,7 +30,7 @@ $bind = array(
     "id" => $device_id
 );
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
-$rows = exec_db_fetch($sql, $bind);
+$rows = exec_db_fetch_all($sql, $bind);
 foreach($rows as $row) {
     $nodekey = sprintf("dv_%s", $row['id']);
     $nodes[$nodekey] = $row['computer_name'];
@@ -76,6 +76,8 @@ from $_tbl0 a
     left join autoget_terms b on a.term_id = b.id
 ";
 $_tbl1 = exec_db_temp_start($sql);
+
+// process_name, address, port, state, pid
 
 // tasklist (windows)
 $sql = "
@@ -138,6 +140,9 @@ $_tbl6 = exec_db_temp_start($sql);
 // add IPv4 to nodes
 $sql = "select address as ip from $_tbl6 group by ip";
 $rows = exec_db_fetch_all($sql);
+
+var_dump($rows);
+
 foreach($rows as $row) {
     if(strlen($row['ip']) < 2) {
         $row['ip'] = "Unknown";
