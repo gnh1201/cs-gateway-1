@@ -18,7 +18,7 @@ if(empty($end_dt)) {
 
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
-        "adjust" => "-24 hours"
+        "adjust" => "-1h"
     ));
 }
 
