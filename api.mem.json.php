@@ -77,6 +77,7 @@ if($mode == "background") {
     $_tbl3 = exec_db_temp_start($sql);
     
     // debug
+    echo "A";
     $rows = exec_db_fetch_all($sql);
     var_dump($rows);
 
@@ -84,6 +85,7 @@ if($mode == "background") {
     $_tbl4 = exec_db_temp_start($sql);
     
     // debug
+    echo "B";
     $rows = exec_db_fetch_all($sql);
     var_dump($rows);
 
@@ -91,6 +93,7 @@ if($mode == "background") {
     $rows = exec_db_fetch_all($sql);
     
     // debug
+    echo "C";
     var_dump($rows);
     
     // create table
