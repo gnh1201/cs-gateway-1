@@ -18,7 +18,7 @@ if(empty($end_dt)) {
 
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
-        "adjust" => "-30m"
+        "adjust" => "-1h"
     ));
 }
 
@@ -43,7 +43,8 @@ $device = current($devices);
 // 1: tasklist (command_id = 1)
 // 2: netstat -anof | findstr -v 127.0.0.1 | findstr -v UDP (command_id = 2)
 // 4: netstat -ntp | grep -v 127.0.0.1 | grep -v ::1 (command_id = 4)
-$sql = get_bind_to_sql_select("autoget_sheets", false, array(
+$bind = false;
+$sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
     "setwheres" => array(
         array("and", array(
             array("or", array(
@@ -67,6 +68,14 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         array("and", array("eq", "device_id", $device_id))
     )
 ));
+$rows = exec_db_fetch_all($sql, $bind);
+
+var_dump($rows);
+
+exit;
+
+
+
 $_tbl0 = exec_db_temp_start($sql);
 
 // tasklist (windows)
