@@ -49,6 +49,7 @@ if($mode == "background") {
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
+    echo $sql;
     $_tbl0 = exec_db_temp_start($sql, false);
     $sql = "select max(b.term) as core from $_tbl0 a left join autoget_terms b on a.term_id = b.id";
     $rows = exec_db_fetch_all($sql, false);
