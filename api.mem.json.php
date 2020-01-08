@@ -45,6 +45,8 @@ if($mode == "background") {
     foreach($rows as $row) {
         $_total = $row['value'];
     }
+    
+    var_dump($rows);
 
     // get memory usage by process (from tasklist)
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
