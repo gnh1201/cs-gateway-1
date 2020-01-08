@@ -37,10 +37,8 @@ if($mode == "background") {
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
     $device = exec_db_fetch($sql, $bind);
     
-    var_dump($sql);
-    
     //debug
-    $rows = exec_db_fetch_all($sql);
+    $rows = exec_db_fetch_all($sql, $bind);
     var_dump($rows);
 
     // get number of cores
