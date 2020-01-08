@@ -165,7 +165,7 @@ if($mode == "background") {
         "basetime" => array("datetime")
     ), "autoget_data_portstate", array(
         "setindex" => array(
-            "index_1" => array("device_id", "port", "datetime")
+            "index_1" => array("device_id", "port", "basetime")
         )
     ));
     foreach($rows as $row) {
