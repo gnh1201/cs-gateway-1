@@ -60,6 +60,10 @@ if($mode == "background") {
         )
     ));
     $_tbl2 = exec_db_temp_start($sql);
+    
+    // debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $sql = "
     select
@@ -71,12 +75,23 @@ if($mode == "background") {
     group by a.pos_y, a.datetime
     ";
     $_tbl3 = exec_db_temp_start($sql);
+    
+    // debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $sql = "select sum(value) as value, datetime from $_tbl3 where name in not ('typepref') group by datetime";
     $_tbl4 = exec_db_temp_start($sql);
+    
+    // debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $sql = "select max(value) as `load`, {$_total} as `total`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as basetime from $_tbl4 group by timekey";
     $rows = exec_db_fetch_all($sql);
+    
+    // debug
+    var_dump($rows);
     
     // create table
     $tablename = exec_db_table_create(array(
