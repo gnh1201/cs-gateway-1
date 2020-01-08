@@ -106,10 +106,6 @@ from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where command_id = 4
 group by a.pos_y, a.datetime
 ";
-$rows = exec_db_fetch_all($sql);
-var_dump($rows);
-exit;
-
 $_tbl3 = exec_db_temp_start($sql);
 
 // step 1
@@ -126,6 +122,10 @@ if($device['platform'] == "windows") {
 } elseif($device['platform'] == "linux")  {
     $sql = "select process_name, address, port, state, pid from $_tbl3";
 }
+$rows = exec_db_fetch_all($sql);
+var_dump($rows);
+exit;
+
 $_tbl4 = exec_db_temp_start($sql);
 
 // step 2
