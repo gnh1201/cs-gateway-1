@@ -69,6 +69,12 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
 ));
 $_tbl0 = exec_db_temp_start($sql);
 
+$sql = "select * from $_tbl0 a, autoget_terms b on a.term_id = b.id";
+$rows = exec_db_fetch_all($sql);
+var_dump($rows);
+
+exit;
+
 // tasklist (windows)
 $sql = "
 select
