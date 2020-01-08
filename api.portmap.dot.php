@@ -69,12 +69,6 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
 ));
 $_tbl0 = exec_db_temp_start($sql);
 
-$sql = "select * from $_tbl0 a, autoget_terms b on a.term_id = b.id";
-$rows = exec_db_fetch_all($sql);
-var_dump($rows);
-
-exit;
-
 // tasklist (windows)
 $sql = "
 select
@@ -93,7 +87,7 @@ select
     substring_index(group_concat(if(a.pos_y = 2, b.term, null)), ':', -1) as port,
     group_concat(if(a.pos_y = 4, b.term, null)) as state,
     group_concat(if(a.pos_y = 5, b.term, null)) as pid
-from $_tbl1 a left join autoget_terms b on a.term_id = b.id
+from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 2
 group by a.pos_y, a.datetime
 ";
@@ -123,7 +117,7 @@ if($device['platform'] == "windows") {
         a.port as port,
         a.state as state,
         a.pid as pid
-    from $_tbl3 a left join $_tbl2 b on a.pid = b.pid";
+    from $_tbl2 a left join $_tbl1 b on a.pid = b.pid";
 } elseif($device['platform'] == "linux")  {
     $sql = "select process_name, address, port, state, pid from $_tbl3";
 }
@@ -209,3 +203,4 @@ exec_db_temp_end($_tbl4);
 exec_db_temp_end($_tbl3);
 exec_db_temp_end($_tbl2);
 exec_db_temp_end($_tbl1);
+exec_db_temp_end($_tbl0);
