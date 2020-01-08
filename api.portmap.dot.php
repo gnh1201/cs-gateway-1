@@ -202,7 +202,7 @@ if($mode == "background") {
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by port
     ";
-    $_tbl5 = exec_db_temp_start($sql);
+    $_tbl5 = exec_db_temp_start($sql, $bind);
     
     //debug
     $rows = exec_db_fetch_all($sql);
