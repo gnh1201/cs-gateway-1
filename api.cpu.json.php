@@ -109,6 +109,7 @@ if($mode == "background") {
             "basetime" => $row['basetime']
         );
         $sql = get_bind_to_sql_insert($tablename, $bind);
+        echo $sql;
         exec_db_query($sql, $bind);
     }
 
