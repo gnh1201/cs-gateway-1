@@ -37,10 +37,6 @@ if($mode == "background") {
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
     $device = exec_db_fetch($sql, $bind);
     
-    //debug
-    $rows = exec_db_fetch_all($sql, $bind);
-    var_dump($rows);
-
     // get number of cores
     $_core = 1;
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
@@ -55,20 +51,12 @@ if($mode == "background") {
     ));
     $_tbl0 = exec_db_temp_start($sql, false);
     
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-    
     $sql = "select max(b.term) as core from $_tbl0 a left join autoget_terms b on a.term_id = b.id";
     $rows = exec_db_fetch_all($sql, false);
     foreach($rows as $row) {
         $_core = preg_replace('/[^0-9]/', '', $row['core']);
     }
     
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         "setwheres" => array(
@@ -81,10 +69,6 @@ if($mode == "background") {
     ));
     $_tbl1 = exec_db_temp_start($sql, false);
     
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-
     $sql = "
     select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
         from $_tbl1 a left join autoget_terms b on a.term_id = b.id
@@ -92,31 +76,18 @@ if($mode == "background") {
     ";
     $_tbl2 = exec_db_temp_start($sql, false);
     
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-
     $sql = "select group_concat(if(pos_y = 2, term, null)) as name, group_concat(if(pos_y = 3, term, null)) as value, datetime from $_tbl2 group by pos_x, datetime";
     $_tbl3 = exec_db_temp_start($sql, false);
     
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-
     $delimiters = array(" ", "(", ")");
     $stopwords = array("Idle", "_Total", "typepref");
     $stopwords = array_merge(get_tokenized_text($device['computer_name'], $delimiters), $stopwords);
     $sql = sprintf("select sum(value) as value, datetime from $_tbl3 where name not in ('%s') group by datetime", implode("', '", $stopwords));
     $_tbl4 = exec_db_temp_start($sql, false);
 
-    //debug
-    $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-    
     $sql = "select (max(value) / {$_core}) as `load`, {$_core} as `core`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as `basetime` from $_tbl4 group by timekey";
     $rows = exec_db_fetch_all($sql);
-    var_dump($rows);
-
+    
     // create table
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
@@ -166,4 +137,3 @@ exec_db_temp_end($_tbl4);
 exec_db_temp_end($_tbl3);
 exec_db_temp_end($_tbl2);
 exec_db_temp_end($_tbl1);
-
