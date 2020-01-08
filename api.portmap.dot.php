@@ -162,7 +162,7 @@ if($mode == "background") {
         "port" => array("int", 11),
         "state" => array("varchar", 45),
         "pid" => array("int", 11),
-        "datetime" => array("datetime")
+        "basetime" => array("datetime")
     ), "autoget_data_portstate", array(
         "setindex" => array(
             "index_1" => array("device_id", "port", "datetime")
@@ -176,7 +176,7 @@ if($mode == "background") {
             "port" => $row['port'],
             "state" => $row['state'],
             "pid" => $row['pid'],
-            "datetime" => $end_dt
+            "basetime" => $end_dt
         );
         $sql = get_bind_to_sql_insert($tablename, $bind);
         exec_db_query($sql, $bind);
@@ -199,7 +199,7 @@ if($mode == "background") {
     );
     $sql = "
     select * from autoget_data_portstate
-        where device_id = :device_id and datetime >= :start_dt and datetime <= :end_dt
+        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by port
     ";
     $_tbl5 = exec_db_temp_start($sql);
