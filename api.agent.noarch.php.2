@@ -1,0 +1,244 @@
+<?php
+loadHelper("networktool");
+loadHelper("string.utils");
+loadHelper("colona.v1.format");
+
+$requests = get_requests();
+
+$ne = get_network_event();
+$ua = $ne['agent'] . DOC_EOL;
+
+$jobargs = decode_colona_format($requests['_RAW']);
+$jobdata = decode_colona_format(base64_decode(get_value_in_array("DATA", $jobargs)));
+
+// get device
+$device = array();
+if(!array_key_empty("UUID", $jobargs)) {
+    $bind = array(
+        "uuid" => $jobargs['UUID']
+    );
+    $sql = get_bind_to_sql_select("autoget_devices", $bind);
+    $device = exec_db_fetch($sql, $bind);
+}
+
+// init
+if(array_key_equals("JOBKEY", $jobargs, "init")) {
+    if(array_key_empty("uuid", $device)) {
+        $bind = array(
+            "uuid" => $jobdata['UUID'],
+            "is_elevated" => $jobdata['IsElevated'],
+            "uri" => $jobdata['URI'],
+            "computer_name" => $jobdata['ComputerName'],
+            "os" => $jobdata['OS'],
+            "arch" => $jobdata['Arch'],
+            "cwd" => $jobdata['CWD'],
+            "net_ip" => implode(",", split_by_line($jobdata['Net_IP'])),
+            "net_mac" => implode(",", split_by_line($jobdata['Net_MAC'])),
+            "datetime" => get_current_datetime(),
+            "last" => get_current_datetime()
+        );
+        $sql = get_bind_to_sql_insert("autoget_devices", $bind);
+        exec_db_query($sql, $bind);
+    }
+}
+
+if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
+    // get response
+    $command_id = $jobargs['JOBSTAGE'];
+    $device_id = $device['id'];
+    $response = base64_decode($jobargs['DATA']);
+
+    // tokenize response
+    $terms = get_tokenized_text($response);
+    foreach($terms as $term) {
+        // add terms
+        $bind = array(
+            "name" => $term,
+            "count" => 0,
+            "datetime" => get_current_datetime(),
+            "last" => get_current_datetime()
+        );
+        $sql = get_bind_to_sql_insert("autoget_terms", $bind, array(
+            "ignore" => array(
+                array("and", array("eq", "name", $term))
+            )
+        ));
+        exec_db_query($sql, $bind);
+    }
+
+    // save response
+    $bind = array(
+        "command_id" => $command_id,
+        "device_id" => $device_id,
+        //"response" => get_compressed_text($response),
+        "response" => $response,
+        "datetime" => get_current_datetime()
+    );
+    $sql = get_bind_to_sql_insert("autoget_responses", $bind);
+    exec_db_query($sql, $bind);
+    $response_id = get_db_last_id();
+
+    // make sheet
+    $row_n = 0;
+    $col_n = 0;
+    $lines = split_by_line($response);
+    foreach($lines as $line) {
+        $row_n++;
+        $col_n = 0;
+        $words = get_tokenized_text($line);
+        foreach($words as $word) {
+            $col_n++;
+
+            if($word != "") {
+
+                // get term id
+                $bind = array(
+                    "name" => $word
+                );
+                $sql = get_bind_to_sql_select("autoget_terms", $bind);
+                $row = exec_db_fetch($sql, $bind);
+                $term_id = get_value_in_array("id", $row, 0);
+
+                // count up
+                /*
+                $bind = array(
+                    "count" =>  array(
+                        "add" => 1
+                    ),
+                    "last" => get_current_datetime()
+                );
+                $sql = get_bind_to_sql_update("autoget_terms", $bind);
+                */
+
+                exec_db_query(
+                    "update autoget_terms set count = count + 1, last = :last where id = :id", array(
+                        "id" => $term_id,
+                        "last" => get_current_datetime()
+                    )
+                );
+
+                // add word to sheet
+                $bind = array(
+                    "response_id" => $response_id,
+                    "command_id" => $command_id,
+                    "device_id" => $device_id,
+                    "row_n" => $row_n,
+                    "col_n" => $col_n,
+                    "term_id" => $term_id,
+                    "datetime" => get_current_datetime()
+                );
+                $sql = get_bind_to_sql_insert("autoget_sheets", $bind);
+                exec_db_query($sql, $bind);
+
+            }
+        }
+    }
+
+    // last status up
+    $bind = array(
+        "jobkey" => $jobargs['JOBKEY'],
+        "jobstage" => $jobargs['JOBSTAGE'],
+        "uuid" => $jobargs['UUID']
+    );
+    $sql = get_bind_to_sql_update("autoget_devices", $bind, array(
+        "setkeys" => array("uuid")
+    ));
+    exec_db_query($sql, $bind);
+}
+
+//write_common_log(json_encode($jobargs), "api.agent.noarch");
+//write_common_log(json_encode($jobdata), "api.agent.noarch");
+
+write_storage_file($ua . $requests['_RAW'] . DOC_EOL, array(
+        "filename" => "api.agent.noarch.log",
+        "storage_type" => "logs",
+        "mode" => "a",
+));
+
+// get device
+if(!array_key_empty("id", $device)) {
+    $device_os = strtolower($device['os']);
+
+    // get commands
+    /*
+    $sql = get_bind_to_sql_select("autoget_commands", false, array(
+        "setfields" => array(
+            "_os" => array(
+                "call" => array("lower", sprintf("'%s'", addslashes($device_os)))
+            ),
+            "_platform" => array(
+                "call" => array("instr", "_os", "platform"), 
+            )
+        ),
+        "setwheres" => array(
+            array("and", array("gt", "id", intval($device_jobstage))),
+            array("and", array("gt", "_platform", 0))
+        ),
+        "serorders" => array(
+            array("asc", "id")
+        ),
+        "setpage" => 1,
+        "setlimit" => 1
+    ));
+    */
+
+    $sql = get_bind_to_sql_select("autoget_commands", false, array(
+        "setwheres" => array(
+            array("and", array("gt", "id", intval($device['jobstage'])))
+        ),
+        "setorders" => array(
+            array("asc", "id")
+        )
+    ));
+
+    $is_started = false;
+    $commands = exec_db_fetch_all($sql, false);
+
+    if(count($commands) > 0) {
+        foreach($commands as $command) {
+            $jobkey = "cmd";
+            $jobstage = $command['id'];
+            $pos = strpos($device_os, $command['platform']);
+
+            if($pos !== false) {
+                echo sprintf("jobkey: %s", $jobkey) . DOC_EOL;
+                echo sprintf("jobstage: %s", $jobstage) . DOC_EOL;
+                echo sprintf("data.cmd: %s", $command['command']) . DOC_EOL;
+
+                // last up
+                $bind = array(
+                    "last" => get_current_datetime(),
+                    "id" => $command['id']
+                );
+                $sql = get_bind_to_sql_update("autoget_commands", $bind, array(
+                    "setkeys" => array("id")
+                ));
+                exec_db_query($sql, $bind);
+
+                // flag up
+                $is_started = true; 
+                break;
+            }
+        }
+    }
+
+    // emergency reset 
+    //echo sprintf("jobkey: cmd", $jobkey) . DOC_EOL;
+    //echo sprintf("jobstage: 0%s", $jobstage) . DOC_EOL;
+    //echo "data.cmd: rm -f /opt/autoget_agent/uuid.txt && (cat /proc/sys/kernel/random/uuid > /opt/autoget_agent/uuid.txt) && service autoget-agent restart" . DOC_EOL;
+    //$is_started = true;
+
+    if(!$is_started) {
+        $bind = array(
+            "jobstage" => 0,
+            "id" => $device['id']
+        );
+        $sql = get_bind_to_sql_update("autoget_devices", $bind, array(
+            "setkeys" => array("id")
+        ));
+        exec_db_query($sql, $bind);
+
+        echo "jobkey: ping" . DOC_EOL;
+        echo "jobstage: 0" . DOC_EOL;
+    }
+}
