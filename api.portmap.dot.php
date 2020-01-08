@@ -84,13 +84,20 @@ $_tbl1 = exec_db_temp_start($sql);
 // netstat (windows)
 $sql = "
 select
-    group_concat(if(a.pos_x = 2, b.term, null)) as address,
-    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
-    group_concat(if(a.pos_x = 4, b.term, null)) as state,
-    group_concat(if(a.pos_x = 5, b.term, null)) as pid
-from $_tbl0 a left join autoget_terms b on a.term_id = b.id
-where a.command_id = 2
-group by a.pos_y, a.datetime
+    left(a.address, a.address - length(a.port) - 1) as address,
+    a.port as port,
+    a.state as state,
+    a.pid as pid
+from (
+    select
+        group_concat(if(a.pos_x = 2, b.term, null)) as address,
+        substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
+        group_concat(if(a.pos_x = 4, b.term, null)) as state,
+        group_concat(if(a.pos_x = 5, b.term, null)) as pid
+    from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+    where a.command_id = 2
+    group by a.pos_y, a.datetime
+) a
 ";
 $rows = exec_db_fetch_all($sql);
 var_dump($rows);
