@@ -18,7 +18,7 @@ if(empty($end_dt)) {
 
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
-        "adjust" => "-1h"
+        "adjust" => "-30m"
     ));
 }
 
@@ -67,6 +67,11 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         array("and", array("eq", "device_id", $device_id))
     )
 ));
+$rows = exec_db_fetch_all($sql, $bind);
+var_dump($rows);
+
+exit;
+
 $_tbl0 = exec_db_temp_start($sql);
 
 // tasklist (windows)
