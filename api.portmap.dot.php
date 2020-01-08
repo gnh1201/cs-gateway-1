@@ -85,7 +85,7 @@ $_tbl1 = exec_db_temp_start($sql);
 $sql = "
 select
     group_concat(if(a.pos_x = 2, b.term, null)) as address,
-    group_concat(if(a.pos_x = 2, b.term, null)) as port,
+    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
     group_concat(if(a.pos_x = 4, b.term, null)) as state,
     group_concat(if(a.pos_x = 5, b.term, null)) as pid
 from $_tbl0 a left join autoget_terms b on a.term_id = b.id
