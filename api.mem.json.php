@@ -81,7 +81,7 @@ if($mode == "background") {
     $rows = exec_db_fetch_all($sql);
     var_dump($rows);
 
-    $sql = "select sum(value) as value, datetime from $_tbl3 where name in not ('typepref') group by datetime";
+    $sql = "select sum(value) as value, datetime from $_tbl3 group by datetime";
     $_tbl4 = exec_db_temp_start($sql);
     
     // debug
