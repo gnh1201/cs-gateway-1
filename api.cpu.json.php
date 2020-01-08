@@ -67,6 +67,10 @@ if($mode == "background") {
         )
     ));
     $_tbl1 = exec_db_temp_start($sql, false);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $sql = "
     select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
@@ -74,9 +78,17 @@ if($mode == "background") {
             where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
     ";
     $_tbl2 = exec_db_temp_start($sql, false);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $sql = "select group_concat(if(pos_y = 2, term, null)) as name, group_concat(if(pos_y = 3, term, null)) as value, datetime from $_tbl2 group by pos_x, datetime";
     $_tbl3 = exec_db_temp_start($sql, false);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     $delimiters = array(" ", "(", ")");
     $stopwords = array("Idle", "_Total", "typepref");
@@ -84,9 +96,12 @@ if($mode == "background") {
     $sql = sprintf("select sum(value) as value, datetime from $_tbl3 where name not in ('%s') group by datetime", implode("', '", $stopwords));
     $_tbl4 = exec_db_temp_start($sql, false);
 
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
+    
     $sql = "select (max(value) / {$_core}) as `load`, {$_core} as `core`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as `basetime` from $_tbl4 group by timekey";
     $rows = exec_db_fetch_all($sql);
-    
     var_dump($rows);
 
     // create table
