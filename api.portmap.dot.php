@@ -80,8 +80,8 @@ $_tbl1 = exec_db_temp_start($sql);
 // tasklist (windows)
 $sql = "
 select 
-    group_concat(if(a.pos_x = 1, term, null)) as process_name,
-    group_concat(if(a.pos_x = 2, term, null)) as pid
+    group_concat(if(pos_x = 1, term, null)) as process_name,
+    group_concat(if(pos_x = 2, term, null)) as pid
 from $_tbl1
 where command_id = 1
 group by pos_y, datetime
@@ -97,7 +97,7 @@ select
     group_concat(if(pos_x = 5, term, null)) as pid
 from $_tbl1
 where command_id = 2
-group by a.pos_y, a.datetime
+group by pos_y, datetime
 ";
 $_tbl3 = exec_db_temp_start($sql);
 
@@ -107,11 +107,11 @@ select
     substring_index(group_concat(if(pos_x = 2, term, null)), ':', 1) as address,
     substring_index(group_concat(if(pos_x = 4, term, null)), ':', -1) as port,
     group_concat(if(pos_x = 6, term, null)) as state,
-    substring_index(group_concat(if(a.pos_x = 7, term, null)), '/', 1) as pid,
-    substring_index(group_concat(if(a.pos_x = 7, term, null)), '/', -1) as process_name
+    substring_index(group_concat(if(pos_x = 7, term, null)), '/', 1) as pid,
+    substring_index(group_concat(if(pos_x = 7, term, null)), '/', -1) as process_name
 from $_tbl1
 where command_id = 4
-group by a.pos_y, a.datetime
+group by pos_y, datetime
 ";
 $_tbl4 = exec_db_temp_start($sql);
 
@@ -212,3 +212,4 @@ exec_db_temp_end($_tbl4);
 exec_db_temp_end($_tbl3);
 exec_db_temp_end($_tbl2);
 exec_db_temp_end($_tbl1);
+exec_db_temp_end($_tbl0);
