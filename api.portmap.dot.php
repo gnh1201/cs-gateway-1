@@ -68,14 +68,6 @@ $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
         array("and", array("eq", "device_id", $device_id))
     )
 ));
-$rows = exec_db_fetch_all($sql, $bind);
-
-var_dump($rows);
-
-exit;
-
-
-
 $_tbl0 = exec_db_temp_start($sql);
 
 // tasklist (windows)
@@ -87,7 +79,19 @@ from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 1
 group by a.pos_y, a.datetime
 ";
+$rows = exec_db_fetch_all($sql);
+
+var_dump($rows);
+
+exit;
+
+
+
 $_tbl1 = exec_db_temp_start($sql);
+
+
+
+
 
 // netstat (windows)
 $sql = "
