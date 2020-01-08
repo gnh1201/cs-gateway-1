@@ -36,6 +36,10 @@ if($mode == "background") {
     );
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
     $device = exec_db_fetch($sql, $bind);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     // get number of cores
     $_core = 1;
@@ -50,11 +54,20 @@ if($mode == "background") {
         )
     ));
     $_tbl0 = exec_db_temp_start($sql, false);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
+    
     $sql = "select max(b.term) as core from $_tbl0 a left join autoget_terms b on a.term_id = b.id";
     $rows = exec_db_fetch_all($sql, false);
     foreach($rows as $row) {
         $_core = preg_replace('/[^0-9]/', '', $row['core']);
     }
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
