@@ -79,27 +79,15 @@ from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 1
 group by a.pos_y, a.datetime
 ";
-$rows = exec_db_fetch_all($sql);
-
-var_dump($rows);
-
-exit;
-
-
-
 $_tbl1 = exec_db_temp_start($sql);
-
-
-
-
 
 // netstat (windows)
 $sql = "
 select
-    substring_index(group_concat(if(a.pos_y = 2, b.term, null)), ':', 1) as address,
-    substring_index(group_concat(if(a.pos_y = 2, b.term, null)), ':', -1) as port,
-    group_concat(if(a.pos_y = 4, b.term, null)) as state,
-    group_concat(if(a.pos_y = 5, b.term, null)) as pid
+    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', 1) as address,
+    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
+    group_concat(if(a.pos_x = 4, b.term, null)) as state,
+    group_concat(if(a.pos_x = 5, b.term, null)) as pid
 from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 2
 group by a.pos_y, a.datetime
@@ -109,15 +97,19 @@ $_tbl2 = exec_db_temp_start($sql);
 // netstat (linux)
 $sql = "
 select
-    substring_index(group_concat(if(a.pos_y = 2, b.term, null)), ':', 1) as address,
-    substring_index(group_concat(if(a.pos_y = 4, b.term, null)), ':', -1) as port,
-    group_concat(if(a.pos_y = 6, b.term, null)) as state,
-    substring_index(group_concat(if(a.pos_y = 7, b.term, null)), '/', 1) as pid,
-    substring_index(group_concat(if(a.pos_y = 7, b.term, null)), '/', -1) as process_name
+    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', 1) as address,
+    substring_index(group_concat(if(a.pos_x = 4, b.term, null)), ':', -1) as port,
+    group_concat(if(a.pos_x = 6, b.term, null)) as state,
+    substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', 1) as pid,
+    substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', -1) as process_name
 from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where command_id = 4
 group by a.pos_y, a.datetime
 ";
+$rows = exec_db_fetch_all($sql);
+var_dump($rows);
+exit;
+
 $_tbl3 = exec_db_temp_start($sql);
 
 // step 1
