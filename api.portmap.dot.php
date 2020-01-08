@@ -119,7 +119,7 @@ if($device['platform'] == "windows") {
         a.pid as pid
     from $_tbl3 a left join $_tbl2 b on a.pid = b.pid";
 } elseif($device['platform'] == "linux")  {
-    $sql = "select process_name, address, port, state, pid from $_tbl4";
+    $sql = "select process_name, address, port, state, pid from $_tbl3";
 }
 $_tbl4 = exec_db_temp_start($sql);
 
@@ -128,7 +128,7 @@ $sql = "select * from $_tbl4 group by port";
 $_tbl5 = exec_db_temp_start($sql);
 
 // add IPv4 to nodes
-$sql = "select address as ip from $_tbl6 group by ip";
+$sql = "select address as ip from $_tbl5 group by ip";
 $rows = exec_db_fetch_all($sql);
 foreach($rows as $row) {
     if(strlen($row['ip']) < 2) {
@@ -141,7 +141,7 @@ foreach($rows as $row) {
 }
 
 // add port/process to node
-$sql = "select concat(port, ',', process_name) as pp from $_tbl6";
+$sql = "select concat(port, ',', process_name) as pp from $_tbl5";
 $rows = exec_db_fetch_all($sql);
 foreach($rows as $row) {
     if(strlen($row['pp'] < 2)) {
@@ -154,7 +154,7 @@ foreach($rows as $row) {
 }
 
 // make relations
-$sql = "select address as ip, concat(port, ',', process_name) as pp, state from $_tbl6";
+$sql = "select address as ip, concat(port, ',', process_name) as pp, state from $_tbl5";
 $rows = exec_db_fetch_all($sql);
 foreach($rows as $row) {
     if(strlen($row['ip']) < 2) {
