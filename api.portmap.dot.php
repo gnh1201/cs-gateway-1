@@ -48,18 +48,18 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         array("and", array(
             array("or", array(
                 array("and", array("eq", "command_id", 1)),
-                array("and", array("in", "col_n", array(1, 2))),
-                array("and", array("gt", "row_n", 3))
+                array("and", array("in", "pos_x", array(1, 2))),
+                array("and", array("gt", "pos_y", 3))
             )),
             array("or", array(
                 array("and", array("eq", "command_id", 2)),
-                array("and", array("in", "col_n", array(2, 4, 5))),
-                array("and", array("gt", "row_n", 4))
+                array("and", array("in", "pos_x", array(2, 4, 5))),
+                array("and", array("gt", "pos_y", 4))
             )),
             array("or", array(
                 array("and", array("eq", "command_id", 4)),
-                array("and", array("in", "col_n", array(4, 6, 7))),
-                array("and", array("gt", "row_n", 2))
+                array("and", array("in", "pos_x", array(4, 6, 7))),
+                array("and", array("gt", "pos_y", 2))
             ))
         )),
         array("and", array("gte", "datetime", $start_dt)),
@@ -67,11 +67,6 @@ $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         array("and", array("eq", "device_id", $device_id))
     )
 ));
-$rows = exec_db_fetch_all($sql, $bind);
-var_dump($rows);
-
-exit;
-
 $_tbl0 = exec_db_temp_start($sql);
 
 // tasklist (windows)
