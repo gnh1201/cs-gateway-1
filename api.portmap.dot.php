@@ -92,6 +92,10 @@ from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 2
 group by a.pos_y, a.datetime
 ";
+$rows = exec_db_fetch_all($sql);
+var_dump($rows);
+exit;
+
 $_tbl2 = exec_db_temp_start($sql);
 
 // netstat (linux)
