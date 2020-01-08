@@ -82,10 +82,9 @@ group by a.pos_y, a.datetime
 $_tbl1 = exec_db_temp_start($sql);
 
 // netstat (windows)
-$_stmt = "left(a.address, length(a.address) - length(a.port) - 1)";
 $sql = "
 select
-    if({$_stmt} = '[::]', '0.0.0.0', if({$_stmt} = '[::1]', '127.0.0.1', {$_stmt})) as address,
+    left(a.address, length(a.address) - length(a.port) - 1) as address,
     a.port as port,
     a.state as state,
     a.pid as pid
@@ -107,10 +106,9 @@ exit;
 $_tbl2 = exec_db_temp_start($sql);
 
 // netstat (linux)
-$_stmt = "left(a.address, length(a.address) - length(a.port) - 1)";
 $sql = "
 select
-    if({$_stmt} = '[::]', '0.0.0.0', if({$_stmt} = '[::1]', '127.0.0.1', {$_stmt})) as address,
+    left(a.address, length(a.address) - length(a.port) - 1) as address,
     a.port as port,
     a.state as state,
     a.pid as pid,
