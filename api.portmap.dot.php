@@ -150,7 +150,7 @@ foreach($rows as $row) {
         $row['ip'] = "Unknown";
     }
     if(!in_array($row['ip'], array("0.0.0.0", "Unknown"))) {
-        $nodekey = sprintf("ip_%s", substr(get_hashed_text($row['ip']), 0, 8));
+        $nodekey = sprintf("ip_%s", get_hashed_text($row['ip']));
         $nodes[$nodekey] = $row['ip'];
     }
 }
@@ -163,7 +163,7 @@ foreach($rows as $row) {
         $row['pp'] = "Unknown";
     }
     if(!in_array($row['pp'], array("Unknown"))) {
-        $nodekey = sprintf("pp_%s", substr(get_hashed_text($row['pp']), 0, 8));
+        $nodekey = sprintf("pp_%s", get_hashed_text($row['pp']));
         $nodes[$nodekey] = $row['pp'];
     }
 }
@@ -209,7 +209,7 @@ $data = array(
     "nodes" => $nodes,
     "relations" => $relations
 );
-`
+
 renderView("view_api.portmap.dot", $data);
 
 // close all temporary tables
