@@ -141,6 +141,10 @@ if($device['platform'] == "windows") {
 } elseif($device['platform'] == "linux")  {
     $sql = "select process_name, address, port, state, pid from $_tbl3";
 }
+$rows = exec_db_fetch_all($sql);
+var_dump($rows);
+exit;
+
 $_tbl4 = exec_db_temp_start($sql);
 
 // step 2
