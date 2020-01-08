@@ -108,14 +108,22 @@ $_tbl2 = exec_db_temp_start($sql);
 // netstat (linux)
 $sql = "
 select
-    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', 1) as address,
-    substring_index(group_concat(if(a.pos_x = 4, b.term, null)), ':', -1) as port,
-    group_concat(if(a.pos_x = 6, b.term, null)) as state,
-    substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', 1) as pid,
-    substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', -1) as process_name
-from $_tbl0 a left join autoget_terms b on a.term_id = b.id
-where command_id = 4
-group by a.pos_y, a.datetime
+    left(a.address, length(a.address) - length(a.port) - 1) as address,
+    a.port as port,
+    a.state as state,
+    a.pid as pid,
+    a.process_name as process_name
+from (
+    select
+        group_concat(if(a.pos_x = 2, b.term, null)) as address,
+        substring_index(group_concat(if(a.pos_x = 4, b.term, null)), ':', -1) as port,
+        group_concat(if(a.pos_x = 6, b.term, null)) as state,
+        substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', 1) as pid,
+        substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', -1) as process_name
+    from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+    where command_id = 4
+    group by a.pos_y, a.datetime
+) a
 ";
 $_tbl3 = exec_db_temp_start($sql);
 
