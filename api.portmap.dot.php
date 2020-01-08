@@ -22,6 +22,7 @@ if(empty($start_dt)) {
 }
 
 // set variables
+$device = false;
 $nodes = array();
 $relations = array();
 
@@ -32,6 +33,7 @@ $bind = array(
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
 $rows = exec_db_fetch_all($sql, $bind);
 foreach($rows as $row) {
+    $device = $row;
     $nodekey = sprintf("dv_%s", $row['id']);
     $nodes[$nodekey] = $row['computer_name'];
 }
