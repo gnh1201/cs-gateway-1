@@ -18,6 +18,7 @@ $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
     "fieldnames" => "id"
 ));
+echo $sql;
 $devices = exec_db_fetch_all($sql, $bind);
 
 if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix", "portmap"))) {
