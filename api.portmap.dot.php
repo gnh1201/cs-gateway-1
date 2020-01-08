@@ -101,7 +101,7 @@ select
     group_concat(if(a.pos_y = 6, b.term, null)) as state,
     substring_index(group_concat(if(a.pos_y = 7, b.term, null)), '/', 1) as pid,
     substring_index(group_concat(if(a.pos_y = 7, b.term, null)), '/', -1) as process_name
-from $_tbl1 a left join autoget_terms b on a.term_id = b.id
+from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where command_id = 4
 group by a.pos_y, a.datetime
 ";
