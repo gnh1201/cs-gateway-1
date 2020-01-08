@@ -203,6 +203,10 @@ if($mode == "background") {
         group by port
     ";
     $_tbl5 = exec_db_temp_start($sql);
+    
+    //debug
+    $rows = exec_db_fetch_all($sql);
+    var_dump($rows);
 
     if($format == "json.datatables") {
         $sql = "select * from $_tbl5";
