@@ -101,6 +101,7 @@ from (
     group by a.pos_y, a.datetime
 ) a
 ";
+echo $sql;
 $rows = exec_db_fetch_all($sql);
 var_dump($rows);
 $_tbl2 = exec_db_temp_start($sql);
