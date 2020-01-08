@@ -73,8 +73,8 @@ $_tbl0 = exec_db_temp_start($sql);
 // tasklist (windows)
 $sql = "
 select
-    group_concat(if(pos_y = 1, b.term, null)) as process_name,
-    group_concat(if(pos_y = 2, b.term, null)) as pid
+    group_concat(if(pos_x = 1, b.term, null)) as process_name,
+    group_concat(if(pos_x = 2, b.term, null)) as pid
 from $_tbl0 a left join autoget_terms b on a.term_id = b.id
 where a.command_id = 1
 group by a.pos_y, a.datetime
