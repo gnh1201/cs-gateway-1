@@ -94,8 +94,9 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "command_id" => $command_id,
         "last" => $now_dt
     );
-    $sql = "insert into autoget_lasts (device_id, command_id, last) value (:device_id, :command_id, :last) on duplicate key update device_id = :device_id, command_id = :command_id";
-    exec_db_query($sql, $bind);
+    exec_db_table_insert("autoget_last", $bind, array(
+        "setduplicate" => array("device_id", "command_id")
+    ));
 
     // create new sheet table
     $schemes = array(
