@@ -70,7 +70,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
             "last" => $now_dt
         );
         $sql = get_bind_to_sql_insert("autoget_terms", $bind, array(
-            "ignore" => array(
+            "setignore" => array(
                 array("and", array("eq", "term", $term))
             )
         ));
