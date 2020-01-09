@@ -97,24 +97,24 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $sql = "insert into autoget_lasts (device_id, command_id, last) value (:device_id, :command_id, :last) on duplicate key update device_id = :device_id, command_id = :command_id";
     exec_db_query($sql, $bind);
 
-	// create new sheet table
-	$schemes = array(
-		"response_id" => array("bigint", 20),
-		"command_id" => array("int", 11),
-		"device_id" => array("int", 11),
-		"pos_y" => array("int", 5),
-		"pos_x" => array("int", 5),
-		"term_id" => array("bigint", 20),
-		"datetime" => array("datetime")
-	);
-	$sheet_tablename = exec_db_table_create($schemes, "autoget_sheets", array(
-		"suffix" => sprintf(".%s%s", date("YmdH"), sprintf("%02d", floor(date("i") / 10) * 10)),
-		"setindex" => array(
-			"index_1" => array("command_id", "device_id"),
-			"index_2" => array("pos_y", "datetime"),
-			"index_3" => array("pos_x", "datetime")
-		)
-	));
+    // create new sheet table
+    $schemes = array(
+        "response_id" => array("bigint", 20),
+        "command_id" => array("int", 11),
+        "device_id" => array("int", 11),
+        "pos_y" => array("int", 5),
+        "pos_x" => array("int", 5),
+        "term_id" => array("bigint", 20),
+        "datetime" => array("datetime")
+    );
+    $sheet_tablename = exec_db_table_create($schemes, "autoget_sheets", array(
+        "suffix" => sprintf(".%s%s", date("YmdH"), sprintf("%02d", floor(date("i") / 10) * 10)),
+        "setindex" => array(
+            "index_1" => array("command_id", "device_id"),
+            "index_2" => array("pos_y", "datetime"),
+            "index_3" => array("pos_x", "datetime")
+        )
+    ));
 
     // make sheet
     $pos_y = 0;
@@ -301,4 +301,3 @@ if(!array_key_empty("id", $device)) {
     set_error("Could not find your device ID");
     show_errors();
 }
-
