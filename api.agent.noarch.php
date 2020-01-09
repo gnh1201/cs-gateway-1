@@ -94,7 +94,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "command_id" => $command_id,
         "last" => $now_dt
     );
-    exec_db_table_insert("autoget_last", $bind, array(
+    exec_db_table_insert("autoget_lasts", $bind, array(
         "setduplicate" => array("device_id", "command_id")
     ));
 
