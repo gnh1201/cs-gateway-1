@@ -81,7 +81,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $bind = array(
         "command_id" => $command_id,
         "device_id" => $device_id,
-        "response" => $response,
+        "response" => get_compressed_text($response),
         "datetime" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_responses", $bind);
