@@ -97,6 +97,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $sql = get_bind_to_sql_insert("autoget_lasts", $bind, array(
         "setduplicate" => array("device_id", "command_id")
     ));
+    write_common_log($sql);
     exec_db_query($sql, $bind);
 
     // create new sheet table
