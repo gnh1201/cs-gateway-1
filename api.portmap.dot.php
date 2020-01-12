@@ -14,7 +14,7 @@ if(empty($device_id)) {
 }
 
 if(empty($adjust)) {
-    $adjust = "-1h";
+    $adjust = "-20m";
 }
 
 if(empty($end_dt)) {
@@ -23,6 +23,7 @@ if(empty($end_dt)) {
 
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
+        "now" => $end_dt,
         "adjust" => $adjust
     ));
 }
@@ -202,6 +203,8 @@ if($mode == "background") {
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by port
     ";
+    write_common_log(get_db_binded_sql($sql, $bind));
+
     $_tbl5 = exec_db_temp_start($sql, $bind);
 
     if($format == "json.datatables") {
@@ -210,11 +213,13 @@ if($mode == "background") {
         $_rows = array();
         foreach($rows as $row) {
             foreach($row as $k=>$v) {
-                if($k != "pid" && strlen($v) < 2) {
+                if(empty($v)) {
                     $row[$k] = "Unknown";
                 }
             }
-            $row = array_merge(array("rowid" => get_hashed_text(implode(",", $row))), $row);
+            $rowid_values = array($row['device_id'], $row['process_name'], $row['address'], $row['port'], $row['state'], $row['pid']);
+            $rowid = get_hashed_text(implode(",", $rowid_values));
+            $row = array_merge(array("rowid" => $rowid), $row);
             $_rows[] = $row;
         }
         $rows = $_rows;

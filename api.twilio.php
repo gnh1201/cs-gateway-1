@@ -19,6 +19,7 @@ $country = get_requested_value("country", array("_JSON", "_ALL"));
 $is_domestic = array_key_equals("lguplus_country", $config, $country);
 
 $response = false;
+$clientid = 0;
 
 $to_list = array();
 $to_list[] = array(
@@ -84,6 +85,7 @@ foreach($assets as $asset) {
     if(in_array($asset->name, $terms)) {
         foreach($clients as $client) {
             if($client->id == $asset->clientid) {
+                $clientid = $asset->clientid;
                 $message = str_replace("/ Unknown /", sprintf("/ %s /", $client->name), $message);
                 break;
             }
@@ -138,6 +140,19 @@ foreach($to_list as $arr_to) {
             break;
     }
 
+    // save history to db table
+    $bind = array(
+        "type" => $action,
+        "clientid" => $clientid,
+        "number_to" => $arr_to['intl'],
+        "country" => $country,
+        "message" => $message,
+        "datetime" => get_current_datetime()
+    );
+    $sql = get_bind_to_sql_insert("twilio_messages", $bind);
+    exec_db_query($sql, $bind);
+
+    // write history to log
     write_debug_log(sprintf("action: %s, message: %s, to: %s", $action, $message, $arr_to['intl']), "api.twilio");
 }
 
