@@ -10,12 +10,6 @@ $now_dt = get_current_datetime();
 
 // get requested variables
 $type = get_requested_value("type");
-$adjust = get_requested_value("adjust");
-
-// check if empty set default
-if(empty($adjust)) {
-    $adjust = "-10m";
-}
 
 // get data from itsm server
 $clients = itsm_get_data("clients");
@@ -87,66 +81,44 @@ switch($type) {
         break;
 
     case "panel2":
-        // get devices
-        $devices = array();
-        foreach($clients as $client) {
-            foreach($assets as $asset) {
-                $device_uuid = get_property_value("102", $asset->customfields, "");
-                $bind = array(
-                    "uuid" => $device_uuid
-                );
-                $sql = get_bind_to_sql_select("autoget_devices", $bind);
-                $rows = exec_db_fetch_all($sql, $bind);
-                foreach($rows as $row) {
-                    $devices[] = $row;
-                }
-            }
-        }
-        $_data['devices'] = $devices;
-
         // get messages
         $bind = array(
             "end_dt" => $now_dt,
             "start_dt" => get_current_datetime(array(
                 "now" => $now_dt,
-                "adjust" => $adjust
+                "adjust" => "-30d"
             ))
         );
-        $sql = "select clientid, count(*) as `value` from twilio_messages where datetime >= :start_dt and datetime <= :end_dt group by clientid";
+        $sql = "select clientid as client_id, count(if(type='text', 1, null)) as sent_text, count(if(type='voice', 1, null)) as sent_voice from twilio_messages where datetime >= :start_dt and datetime <= :end_dt group by clientid";
         $rows = exec_db_fetch_all($sql, $bind);
-        $_data['lastmessages'] = $rows;
+        foreach($rows as $k=>$row) {
+            $client_name = "";
+            foreach($clients as $client) {
+                if($row['client_id'] == $client->id) {
+                    $client_name = $client->name;
+                    break;
+                }
+            }
+            $rows[$k]['client_name'] = $client_name;
+        }
+        $_data = $rows;
         break;
 
     case "panel3":
-        // get devices
-        $devices = array();
-        foreach($clients as $client) {
-            foreach($assets as $asset) {
-                $device_uuid = get_property_value("102", $asset->customfields, "");
-                $bind = array(
-                    "uuid" => $device_uuid
-                );
-                $sql = get_bind_to_sql_select("autoget_devices", $bind);
-                $rows = exec_db_fetch_all($sql, $bind);
-                foreach($rows as $row) {
-                    $devices[] = $row;
-                }
-            }
-        }
-        $_data['devices'] = $devices;
-
         // get cpu last 10
         $bind = array(
             "end_dt" => $now_dt,
             "start_dt" => get_current_datetime(array(
                 "now" => $now_dt,
-                "adjust" => $adjust
+                "adjust" => "-15m"
             ))
         );
         $sql = "
-            select device_id, max(`load`) as `load` from autoget_data_cpu
-                where basetime >= :start_dt and basetime <= :end_dt
-                group by device_id
+            select a.device_id as device_id, b.computer_name as device_name, if(a.`load` > 100, 96, a.`load`) as `load` from (
+                select device_id,  max(`load`) as `load` from autoget_data_cpu
+                    where basetime >= :start_dt and basetime <= :end_dt
+                    group by device_id
+            ) a, autoget_devices b where a.device_id = b.id order by `load` desc limit 10
         ";
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['cpulasts'] = $rows;
@@ -156,13 +128,15 @@ switch($type) {
             "end_dt" => $now_dt, 
             "start_dt" => get_current_datetime(array(
                 "now" => $now_dt,
-                "adjust" => $adjust
+                "adjust" => "-15m"
             ))
         );
         $sql = "
-            select device_id, max(`load`) as `load` from autoget_data_mem
-                where basetime >= :start_dt and basetime <= :end_dt
-                group by device_id
+            select a.device_id as device_id, b.computer_name as device_name, if(a.`load` > 100, 96, a.`load`) as `load` from (
+                select device_id, max(`load`) as `load` from autoget_data_mem
+                    where basetime >= :start_dt and basetime <= :end_dt
+                    group by device_id
+            ) a, autoget_devices b where a.device_id = b.id order by `load` desc limit 10
         ";
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['memlasts'] = $rows;
