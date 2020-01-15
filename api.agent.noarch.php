@@ -54,8 +54,6 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $command_id = get_value_in_array("JOBSTAGE", $jobargs, "");
     $device_id = $device['id'];
     $response = base64_decode(get_value_in_array("DATA", $jobargs, ""));
-    
-    //write_common_log($jobargs['DATA'], 'base64');
 
     // tokenize response
     $terms = get_tokenized_text($response, $delimiters);
@@ -97,6 +95,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $sql = get_bind_to_sql_insert("autoget_lasts", $bind, array(
         "setduplicate" => array("device_id", "command_id")
     ));
+    write_common_log($sql, "test");
     exec_db_query($sql, $bind);
 
     // create new sheet table
@@ -141,12 +140,12 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
                 $term_id = get_value_in_array("id", $row, 0);
 
                 // count up
-                exec_db_query(
-                    "update autoget_terms set count = count + 1, last = :last where id = :id", array(
-                        "id" => $term_id,
-                        "last" => $now_dt
-                    )
+                $sql = "update autoget_terms set count = count + 1, last = :last where id = :id";
+                $bind = array(
+                    "id" => $term_id,
+                    "last" => $now_dt
                 );
+                exec_db_query($sql, $bind);
 
                 // add word to sheet
                 $bind = array(
