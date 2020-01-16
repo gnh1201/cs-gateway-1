@@ -36,31 +36,27 @@ if($mode == "background") {
     );
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
     $device = exec_db_fetch($sql, $bind);
-    
+ 
     // get number of cores
-    $_core = 1;
-    $sql = get_bind_to_sql_select("autoget_sheets", false, array(
-        "setwheres" => array(
-            array("and", array("eq", "device_id", $device_id)),
-            array("and", array("eq", "command_id", 50)),
-            array("and", array("eq", "pos_y", 1)),
-            array("and", array("eq", "pos_x", 1)),
-            array("and", array("lte", "datetime", $end_dt)),
-            array("and", array("gte", "datetime", $start_dt))
-        )
-    ));
-    echo $sql;
-;
-    $_tbl0 = exec_db_temp_start($sql, false);
-    
-    $sql = "select max(b.term) as core from $_tbl0 a left join autoget_terms b on a.term_id = b.id";
-    $rows = exec_db_fetch_all($sql, false);
+    $_core = 0;
+    $bind = array(
+        "device_id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
+    $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
-        $_core = preg_replace('/[^0-9]/', '', $row['core']);
+        $_core = $row['core'];
     }
 
-    var_dump($_core);
-    
+    // if 0(zero) core, set average cores of all computers
+    if(!($_core > 0)) {
+        $sql = "select round(avg(core), 0) as core from autoget_data_cpucore";
+        $rows = exec_db_fetch_all($sql);
+        foreach($rows as $row) {
+            $_core = $row['core'];
+        }
+    }
+
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         "setwheres" => array(
@@ -90,14 +86,13 @@ if($mode == "background") {
     $_tbl4 = exec_db_temp_start($sql, false);
 
     $sql = "select (max(value) / {$_core}) as `load`, {$_core} as `core`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as `basetime` from $_tbl4 group by timekey";
-    echo $sql;
     $rows = exec_db_fetch_all($sql);
 
     // create table
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
         "load" => array("float", "5,2"),
-        "core" => array("int", 2),
+        "core" => array("int", 3),
         "basetime" => array("datetime")
     ), "autoget_data_cpu", array(
         "setindex" => array(

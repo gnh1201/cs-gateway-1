@@ -34,24 +34,26 @@ $data = array(
 if($mode == "background") {
     $bind = array(
         "device_id" => $device_id,
-        "command_id" => 50
+        "command_id" => 37
     );
     $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
         "setwheres" => array(
+            array("and", array("eq", "pos_y", 2)),
+            array("and", array("eq", "pos_x", 1)),
             array("and", array("lte", "datetime", $end_dt)),
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
     $_tbl0 = exec_db_temp_start($sql, $bind);
 
-    $sql = "select a.device_id as device_id, max(b.term) as core from $_tbl0 a, autoget_terms b where a.term_id = b.id group by a.device_id";
+    $sql = "select a.device_id as device_id, max(b.term) as total from $_tbl0 a, autoget_terms b where a.term_id = b.id group by a.device_id";
     $rows = exec_db_fetch_all($sql);
 
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
-        "core" => array("int", 3),
+        "total" => array("int", 45),
         "basetime" => array("datetime")
-    ), "autoget_data_cpucore", array(
+    ), "autoget_data_memtotal", array(
         "setunique" => array(
             "unique_1" => array("device_id")
         )
@@ -60,14 +62,12 @@ if($mode == "background") {
     foreach($rows as $row) {
         $bind = array(
             "device_id" => $row['device_id'],
-            "core" => get_int($row['core']),
+            "total" => get_int($row['total']),
             "basetime" => $now_dt
         );
         $sql = get_bind_to_sql_insert($tablename, $bind, array(
             "setkeys" => array("device_id")
         ));
-        echo $sql;
-
         exec_db_query($sql, $bind);
     }
 
@@ -76,7 +76,7 @@ if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind, array(
+    $sql = get_bind_to_sql_select("autoget_data_memtotal", $bind, array(
         "setwheres" => array(
             array("and", array("lte", "basetime", $end_dt)),
             array("and", array("gte", "basetime", $start_dt))

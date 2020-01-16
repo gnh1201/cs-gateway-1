@@ -20,18 +20,18 @@ $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
 ));
 $devices = exec_db_fetch_all($sql, $bind);
 
-if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix", "portmap"))) {
+if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap"))) {
     foreach($devices as $device) {
         switch($action) {
-            case "cpu":
-                // get cpu usage
-                $responses[] = get_web_page(get_route_link("api.cpu.json"), "get", array(
+            case "cpucore":
+                // get cpu cores
+                $responses[] = get_web_page(get_route_link("api.cpucore.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
                 ));
                 break;
-                
+
             case "cputime":
                 // get cpu usage details
                 $responses[] = get_web_page(get_route_link("api.cputime.json"), "get", array(
@@ -40,19 +40,37 @@ if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix",
                     "mode" => "background"
                 ));
                 break;
-            
-            case "mem":
-                // get memory usage
-                $responses[] = get_web_page(get_route_link("api.mem.json"), "get", array(
+
+            case "cpu":
+                // get cpu usage
+                $responses[] = get_web_page(get_route_link("api.cpu.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
                 ));
                 break;
-                
+
+            case "memtotal":
+                // get memory total
+                $responses[] = get_web_page(get_route_link("api.memtotal.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background"
+                ));
+                break;
+
             case "memtime":
                 // get memory usage
                 $responses[] = get_web_page(get_route_link("api.memtime.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background"
+                ));
+                break;
+
+            case "mem":
+                // get memory usage
+                $responses[] = get_web_page(get_route_link("api.mem.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"

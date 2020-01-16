@@ -12,7 +12,7 @@ $data = array(
 );
 
 if(empty($adjust)) {
-    $adjust = "-1h";
+    $adjust = "-3h";
 }
 
 if(empty($end_dt)) {
@@ -27,28 +27,24 @@ if(empty($start_dt)) {
 }
 
 if($mode == "background") {
-    // get total visible memory
-    $_total = 1;
-    $sql = get_bind_to_sql_select("autoget_sheets", false, array(
-        "setwheres" => array(
-            array("and", array("eq", "command_id", 37)),
-            array("and", array("eq", "device_id", $device_id)),
-            array("and", array("eq", "pos_y", 2)),
-            array("and", array("eq", "pos_x", 1)),
-            array("and", array("gte", "datetime", $start_dt)),
-            array("and", array("lte", "datetime", $end_dt))
-        )
-    ));
-    $_tbl1 = exec_db_temp_start($sql, false);
-    $sql = "select max(b.term) as value from $_tbl1 a left join autoget_terms b on a.term_id = b.id";
-    $rows = exec_db_fetch_all($sql, false);
+    // get total of memory
+    $_total = 0;
+    $bind = array(
+        "device_id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_data_memtotal", $bind);
+    $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
-        $_total = $row['value'];
+        $_total = $row['total'];
     }
 
-    // if _total is empty set 1
-    if(empty($_total)) {
-        $_total = 1;
+    // if 0(zero) total, set average total of all computers
+    if(!($_core > 0)) {
+        $sql = "select round(avg(total), 0) as total from autoget_data_memtotal";
+        $rows = exec_db_fetch_all($sql);
+        foreach($rows as $row) {
+            $_total = $row['total'];
+        }
     }
 
     // get memory usage by process (from tasklist)
