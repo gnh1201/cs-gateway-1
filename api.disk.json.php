@@ -71,7 +71,7 @@ if($mode == "background") {
         $_tbl2 = exec_db_temp_start($sql, false);
 
         // step 2
-        $sql = "select name, avg(total) as total, avg(available) as available from $_tbl2 where name is not null group by name";
+        $sql = "select name, avg(total) as total, avg(available) as available from $_tbl2 group by name";
         $rows = exec_db_fetch_all($sql, false);
     }
 
@@ -103,7 +103,7 @@ if($mode == "background") {
         $_tbl2 = exec_db_temp_start($sql, false);
 
         // step 2
-        $sql = "select name, (avg(total) * 1024) as total, (avg(available) * 1024) as available from $_tbl2 where name is not null group by name";
+        $sql = "select name, (avg(total) * 1024) as total, (avg(available) * 1024) as available from $_tbl2 group by name";
         $rows = exec_db_fetch_all($sql, false);
     }
 
@@ -133,7 +133,7 @@ if($mode == "background") {
         exec_db_query($sql, $bind);
     }
     
-    $data['successs'] = true;
+    $data['success'] = true;
 } else {
     $bind = array(
         "device_id" => $device_id,
