@@ -68,7 +68,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
             "last" => $now_dt
         );
         $sql = get_bind_to_sql_insert("autoget_terms", $bind, array(
-            "setignore" => array(
+            "setignores" => array(
                 array("and", array("eq", "term", $term))
             )
         ));
@@ -93,7 +93,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "last" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_lasts", $bind, array(
-        "setduplicate" => array("device_id", "command_id")
+        "setkeys" => array("device_id", "command_id")
     ));
     exec_db_query($sql, $bind);
 
