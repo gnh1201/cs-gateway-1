@@ -4,6 +4,7 @@ loadHelper("string.utils");
 $device_id = get_requested_value("device_id");
 $start_dt = get_requested_value("start_dt");
 $end_dt = get_requested_value("end_dt");
+$adjust = get_requested_value("adjust");
 $mode = get_requested_value("mode");
 
 $now_dt = get_current_datetime();
@@ -13,6 +14,10 @@ if(empty($device_id)) {
     show_errors();
 }
 
+if(empty($adjust)) {
+    $adjust = "-10m";
+}
+
 if(empty($end_dt)) {
     $end_dt = $now_dt;
 }
@@ -20,7 +25,7 @@ if(empty($end_dt)) {
 if(empty($start_dt)) {
     $start_dt = get_current_datetime(array(
         "now" => $end_dt, 
-        "adjust" => "-1h"
+        "adjust" => $adjust
     ));
 }
 
