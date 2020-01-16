@@ -20,7 +20,7 @@ $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
 ));
 $devices = exec_db_fetch_all($sql, $bind);
 
-if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix", "portmap", "user"))) {
+if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix", "portmap"))) {
     foreach($devices as $device) {
         switch($action) {
             case "cpu":
@@ -98,7 +98,7 @@ if(in_array($action, array("cpu", "cputime", "mem", "memtime", "disk", "hotfix",
     }
 }
 
-if($action == "flush") {
+if($action == "flush_sheets") {
     // flush sheets
     $sql = get_bind_to_sql_select("autoget_sheets.tables", false, array(
         "setwheres" => array(
@@ -117,14 +117,18 @@ if($action == "flush") {
         exec_db_query($sql, $bind);
     }
 
+    $responses[] = "done";
+}
+
+if($action == "flush_terms") {
     // flush terms
-    $sql = "delete from autoget_terms where datetime < :start_dt";
     $bind = array(
         "start_dt" => $start_dt
     );
+    $sql = "delete from autoget_terms where datetime < :start_dt";
     exec_db_query($sql, $bind);
 
-    $responses[] = array("content" => "done flush");
+    $responses[] = "done";
 }
 
 header("Content-Type: application/json");

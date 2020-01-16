@@ -43,7 +43,12 @@ if($mode == "background") {
     $sql = "select max(b.term) as value from $_tbl1 a left join autoget_terms b on a.term_id = b.id";
     $rows = exec_db_fetch_all($sql, false);
     foreach($rows as $row) {
-        $_total = intval($row['value']);
+        $_total = $row['value'];
+    }
+
+    // if _total is empty set 1
+    if(empty($_total)) {
+        $_total = 1;
     }
 
     // get memory usage by process (from tasklist)

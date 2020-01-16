@@ -49,6 +49,8 @@ if($mode == "background") {
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
+    echo $sql;
+;
     $_tbl0 = exec_db_temp_start($sql, false);
     
     $sql = "select max(b.term) as core from $_tbl0 a left join autoget_terms b on a.term_id = b.id";
@@ -56,6 +58,8 @@ if($mode == "background") {
     foreach($rows as $row) {
         $_core = preg_replace('/[^0-9]/', '', $row['core']);
     }
+
+    var_dump($_core);
     
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
@@ -86,8 +90,9 @@ if($mode == "background") {
     $_tbl4 = exec_db_temp_start($sql, false);
 
     $sql = "select (max(value) / {$_core}) as `load`, {$_core} as `core`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as `basetime` from $_tbl4 group by timekey";
+    echo $sql;
     $rows = exec_db_fetch_all($sql);
-    
+
     // create table
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
