@@ -47,7 +47,6 @@ if($mode == "background") {
             $_total += get_int($row['total']);
         }
     }
-    */
 
     // get memory usage by process (from tasklist)
     $bind = array(
@@ -62,7 +61,7 @@ if($mode == "background") {
             array("and", array("lte", "datetime", $end_dt))
         )
     ));
-    $_tbl2 = exec_db_temp_start($sql);
+    $_tbl2 = exec_db_temp_start($sql, $bind);
 
     $sql = "
     select
@@ -80,6 +79,20 @@ if($mode == "background") {
 
     $sql = "select max(value) as `load`, {$_total} as `total`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as basetime from $_tbl4 group by timekey";
     $rows = exec_db_fetch_all($sql);
+    */
+
+    $bind = array(
+        "device_id" => $device_id,
+        "start_dt" => $start_dt,
+        "end_dt" => $end_dt
+    );
+    $sql = "
+        select sum(`value`) as `load`, max(`basetime`) as `basetime`
+        from autoget_data_memtime
+        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+        group by basetime
+    ";
+    $rows = exec_db_fetch_all($sql, $bind);
 
     // create table
     $tablename = exec_db_table_create(array(
@@ -98,7 +111,7 @@ if($mode == "background") {
         $bind = array(
             "device_id" => $device_id,
             "load" => $row['load'],
-            "total" => $row['total'],
+            "total" => $_total,
             "basetime" => $row['basetime']
         );
         $sql = get_bind_to_sql_insert($tablename, $bind);
@@ -113,10 +126,10 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-        select max(`load`) as `load`, max(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-            from autoget_data_mem
-            where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
-            group by timekey
+        select avg(`load`) as `load`, avg(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
+        from autoget_data_mem
+        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+        group by timekey
     ";
     $rows = exec_db_fetch_all($sql, $bind);
 

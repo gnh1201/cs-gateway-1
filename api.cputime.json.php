@@ -46,17 +46,19 @@ if($mode == "background") {
     $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
-        $_core = $row['core'];
+        $_core += get_int($row['core']);
     }
 
+/*
     // if 0(zero) core, set average cores of all computers
     if(!($_core > 0)) {
         $sql = "select round(avg(core), 0) as core from autoget_data_cpucore";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
-            $_core = $row['core'];
+            $_core += get_int($row['core']);
         }
     }
+*/
 
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
@@ -81,10 +83,10 @@ if($mode == "background") {
     $_tbl3 = exec_db_temp_start($sql, false);
 
     $delimiters = array(" ", "(", ")");
-    $stopwords = array("Idle", "_Total", "typepref");
+    $stopwords = array("Idle", "_Total", "typeperf");
     $stopwords = array_merge(get_tokenized_text($device['computer_name'], $delimiters), $stopwords);
 
-    $sql = sprintf("select name, round(max(value) / {$_core}, 2) as value from $_tbl3 where name not in ('%s') group by name", implode("', '", $stopwords));
+    $sql = sprintf("select name, round(avg(value) / {$_core}, 2) as value from $_tbl3 where name not in ('%s') group by name", implode("', '", $stopwords));
     $rows = exec_db_fetch_all($sql);
 
     // create table
@@ -117,7 +119,7 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-    select name, concat(max(value), '%') as value from autoget_data_cputime
+    select name, concat(round(avg(value), 2), '%') as value from autoget_data_cputime
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by name
     ";

@@ -71,8 +71,8 @@ if($mode == "background") {
     ";
     $_tbl3 = exec_db_temp_start($sql);
 
-    //$sql = "select name, concat(max(_value), 'KB') as _value, concat(max(value), '%') as value from $_tbl3 group by name";
-    $sql = "select name, max(_value) as _value, max(value) as value from $_tbl3 where name not in ('typeperf') group by name";
+    //$sql = "select name, concat(avg(_value), 'KB') as _value, concat(avg(value), '%') as value from $_tbl3 group by name";
+    $sql = "select name, avg(_value) as _value, avg(value) as value from $_tbl3 where name not in ('typeperf') group by name";
     $rows = exec_db_fetch_all($sql);
     
     // create table
@@ -107,7 +107,7 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-    select name, concat(format(max(_value) / 1024, 2), 'MB') as _value, concat(max(value), '%') as value from autoget_data_memtime
+    select name, concat(format(avg(_value) / 1024, 2), 'MB') as _value, concat(round(avg(value), 2), '%') as value from autoget_data_memtime
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by name
     ";

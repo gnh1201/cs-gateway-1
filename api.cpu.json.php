@@ -48,7 +48,7 @@ if($mode == "background") {
         $_core += get_int($row['core']);
     }
 
-    /*
+/*
     // if 0(zero) core, set average cores of all computers
     if(!($_core > 0)) {
         $sql = "select round(avg(core), 0) as core from autoget_data_cpucore";
@@ -57,7 +57,6 @@ if($mode == "background") {
             $_core += get_int($row['core']);
         }
     }
-    */
 
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
@@ -69,10 +68,6 @@ if($mode == "background") {
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
-
-    $rows = exec_db_fetch_all($sql, $bind);
-    var_dump($rows);
-
     $_tbl1 = exec_db_temp_start($sql, false);
     
     $sql = "
@@ -93,6 +88,21 @@ if($mode == "background") {
 
     $sql = "select (max(value) / {$_core}) as `load`, {$_core} as `core`, floor(unix_timestamp(datetime) / (5 * 60)) as `timekey`, max(datetime) as `basetime` from $_tbl4 group by timekey";
     $rows = exec_db_fetch_all($sql);
+    */
+
+    // get cputime data from internal API
+    $bind = array(
+        "device_id" => $device_id,
+        "start_dt" => $start_dt,
+        "end_dt" => $end_dt
+    );
+    $sql = "
+        select sum(`value`) as `load`, max('core') as `core`, max(`basetime`) as `basetime`
+        from autoget_data_cputime
+        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt group by basetime
+    ";
+    $rows = exec_db_fetch_all($sql, $bind);
+    var_dump(get_db_binded_sql($sql, $bind));
 
     // create table
     $tablename = exec_db_table_create(array(
@@ -111,7 +121,7 @@ if($mode == "background") {
         $bind = array(
             "device_id" => $device_id,
             "load" => $row['load'],
-            "core" => $row['core'],
+            "core" => $_core,
             "basetime" => $row['basetime']
         );
         $sql = get_bind_to_sql_insert($tablename, $bind);
