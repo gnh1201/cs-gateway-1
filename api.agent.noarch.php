@@ -38,8 +38,8 @@ if(array_key_equals("JOBKEY", $jobargs, "init")) {
             "cwd" => $jobdata['CWD'],
             "net_ip" => implode(",", split_by_line($jobdata['Net_IP'])),
             "net_mac" => implode(",", split_by_line($jobdata['Net_MAC'])),
-            "datetime" => get_current_datetime(),
-            "last" => get_current_datetime()
+            "datetime" => $now_dt,
+            "last" => $now_dt
         );
         $sql = get_bind_to_sql_insert("autoget_devices", $bind);
         exec_db_query($sql, $bind);
@@ -187,7 +187,7 @@ if(!array_key_empty("id", $device)) {
     );
     $sql = get_bind_to_sql_select("autoget_tx_queue", $bind, array(
         "setwheres" => array(
-            array("and", array("gte", "expired_on", get_current_datetime())),
+            array("and", array("gte", "expired_on", $now_dt)),
             array("and", array("not", "is_read", 1))
         ),
         "setlimit" => 1,
@@ -247,7 +247,8 @@ if(!array_key_empty("id", $device)) {
                     "message" => $_row['command'],
                     "created_on" => get_current_datetime(),
                     "expired_on" => get_current_datetime(array(
-                        "adjust" => sprintf("+%s seconds", intval($_row['period']) * 2)
+                        "now" => $now_dt,
+                        "adjust" => "20m"
                     ))
                 );
                 $__sql = get_bind_to_sql_insert("autoget_tx_queue", $__bind);
@@ -285,7 +286,7 @@ if(!array_key_empty("id", $device)) {
 
             // update last datetime
             $_bind = array(
-                "last" => get_current_datetime()
+                "last" => $now_dt
             );
             $_sql = get_bind_to_sql_update("autoget_commands", $_bind, array(
                 "setwheres" => array(
