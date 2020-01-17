@@ -35,23 +35,27 @@ if($mode == "background") {
     $sql = get_bind_to_sql_select("autoget_data_memtotal", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
-        $_total = $row['total'];
+        $_total += get_int($row['total']);
     }
 
+    /*
     // if 0(zero) total, set average total of all computers
-    if(!($_core > 0)) {
+    if(!($_total > 0)) {
         $sql = "select round(avg(total), 0) as total from autoget_data_memtotal";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
-            $_total = $row['total'];
+            $_total += get_int($row['total']);
         }
     }
+    */
 
     // get memory usage by process (from tasklist)
-    $sql = get_bind_to_sql_select("autoget_sheets", false, array(
+    $bind = array(
+        "command_id" => 1,
+        "device_id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
         "setwheres" => array(
-            array("and", array("eq", "command_id", 1)),
-            array("and", array("eq", "device_id", $device_id)),
             array("and", array("gt", "pos_y", 3)),
             array("and", array("in", "pos_x", array(1, 4))),
             array("and", array("gte", "datetime", $start_dt)),
@@ -109,7 +113,7 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-        select max(`load`) as `load`, min(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
+        select max(`load`) as `load`, max(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
             from autoget_data_mem
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey

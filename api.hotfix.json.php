@@ -124,7 +124,9 @@ if($mode == "background") {
             "name" => $row['name'],
             "date" => $row['date']
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
+        $sql = get_bind_to_sql_insert($tablename, $bind, array(
+            "setkeys" => array("device_id", "name")
+        ));
         exec_db_query($sql, $bind);
     }
     

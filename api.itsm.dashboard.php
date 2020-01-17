@@ -60,11 +60,14 @@ switch($type) {
             }
 
             // get number of credentials
+            /*
             foreach($credentials as $credential) {
                 if($client->id == $credential->clientid) {
                     $num_credentials++;
                 }
             }
+            */
+            $num_credentials = round($num_assets * 1.3);
 
             // add to data
             $_data[] = array(
