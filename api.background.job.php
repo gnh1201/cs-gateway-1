@@ -8,7 +8,10 @@ if(empty($adjust)) {
     $adjust = "-10m";
 }
 
+$end_dt = get_current_datetime();
+
 $start_dt = get_current_datetime(array(
+    "now" => $end_dt,
     "adjust" => $adjust
 ));
 
@@ -135,7 +138,9 @@ if($action == "flush_sheets") {
         exec_db_query($sql, $bind);
     }
 
-    $responses[] = "done";
+    $responses[] = array(
+        "success" => true
+    );
 }
 
 if($action == "flush_terms") {
@@ -144,9 +149,24 @@ if($action == "flush_terms") {
         "start_dt" => $start_dt
     );
     $sql = "delete from autoget_terms where datetime < :start_dt";
-    exec_db_query($sql, $bind);
+    $result = exec_db_query($sql, $bind);
 
-    $responses[] = "done";
+    $responses[] = array(
+        "success" => $result
+    );
+}
+
+if($action == "flush_tx_queue") {
+    // flush tx_queue
+    $bind = array(
+        "start_dt" => $start_dt
+    );
+    $sql = "delete from autoget_tx_queue where expired_on < :start_dt";
+    $result = exec_db_query($sql, $bind);
+
+    $responses[] = array(
+        "success" => $result
+    );
 }
 
 header("Content-Type: application/json");
