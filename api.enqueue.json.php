@@ -47,7 +47,7 @@ foreach($devices as $device) {
         $__row = exec_db_fetch($__sql, $__bind);
 
         // compare now and last
-        $last_dt = get_value_in_array("last", $__row, "");
+        $last_dt = get_value_in_array("queue_last", $__row, "");
 
         if(!empty($last_dt)) {
             $__bind = array(
@@ -58,10 +58,7 @@ foreach($devices as $device) {
             $__row = exec_db_fetch($__sql, $__bind);
             $dtf = intval(get_value_in_array("dtf", $__row, 0));
             if($dtf > 0) {
-                //write_common_log("## skip. dtf: " . $dtf, "api.agent.noarch");
                 continue;
-            } else {
-                //write_common_log("## next. dtf: " . $dtf, "api.agent.noarch");
             }
         }
 
@@ -79,6 +76,17 @@ foreach($devices as $device) {
         );
         $__sql = get_bind_to_sql_insert("autoget_tx_queue", $__bind);
         exec_db_query($__sql, $__bind);
+        
+        // update to queue last
+        $bind = array(
+            "device_id" => $device_id,
+            "command_id" => $_row['id'],
+            "queue_last" => $now_dt
+        );
+        $sql = get_bind_to_sql_update("autoget_lasts", $bind, array(
+            "setkeys" => array("device_id", "command_id")
+        ));
+        exec_db_query($sql, $bind);
     }
 }
 
