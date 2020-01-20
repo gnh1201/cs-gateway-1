@@ -148,7 +148,7 @@ if($action == "flush_terms") {
     $bind = array(
         "start_dt" => $start_dt
     );
-    $sql = "delete from autoget_terms where datetime < :start_dt";
+    $sql = "delete from autoget_terms where last < :start_dt";
     $result = exec_db_query($sql, $bind);
 
     $responses[] = array(
