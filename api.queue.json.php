@@ -11,6 +11,10 @@ $sql = get_bind_to_sql_select("autoget_devices", $bind);
 $rows = exec_db_fetch_all($sql, $bind);
 
 foreach($devices as $device)
+    // set variable
+    $device_os = strtolower($device['os']);
+    $device_id = $device['id'];
+
     // add new queue
     $_bind = array(
         "platform" => $device['platform']
