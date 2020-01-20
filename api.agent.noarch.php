@@ -128,7 +128,7 @@ if(!array_key_empty("id", $device)) {
         )
     ));
     $rows = exec_db_fetch_all($sql, $bind);
-    
+
     // pull a job
     foreach($rows as $row) {
         echo sprintf("jobkey: %s", $row['jobkey']) . DOC_EOL;
@@ -180,33 +180,12 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     // set delimiters
     $delimiters = array(" ", "\t", "\",\"", "\"", "'", "\r\n", "\n", "(", ")", "\\");
 
-    // get response
+    // get response from client
     $command_id = get_value_in_array("JOBSTAGE", $jobargs, "");
     $device_id = $device['id'];
     $response = base64_decode(get_value_in_array("DATA", $jobargs, ""));
 
-    // tokenize response
-    $terms = get_tokenized_text($response, $delimiters);
-    foreach($terms as $term) {
-        $term = trim($term);
-
-        // add terms
-        $options = array(
-            "setignores" => array(
-                array("and", array("eq", "term", $term))
-            )
-        );
-        $bind = array(
-            "term" => $term,
-            "count" => 0,
-            "datetime" => $now_dt,
-            "last" => $now_dt
-        );
-        $sql = get_bind_to_sql_insert("autoget_terms", $bind, $options);
-        exec_db_query($sql, $bind);
-    }
-
-    // save response
+    // add response to database
     $bind = array(
         "command_id" => $command_id,
         "device_id" => $device_id,
@@ -217,7 +196,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     exec_db_query($sql, $bind);
     $response_id = get_db_last_id();
 
-    // update last
+    // update the last of device_id/command_id
     $bind = array(
         "device_id" => $device_id,
         "command_id" => $command_id,
@@ -248,8 +227,8 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     ));
 
     // make sheet
-    $pos_y = 0;
-    $pos_x = 0;
+    $pos_y = 0;  // position y axis
+    $pos_x = 0;  // position x axis
     $lines = split_by_line($response);
     foreach($lines as $line) {
         $pos_y++;
@@ -257,24 +236,47 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         $terms = get_tokenized_text($line, $delimiters);
         foreach($terms as $term) {
             $pos_x++;
-            $term = trim($term);
 
-            if(!empty($term)) {
+            // check term is empty
+            if(empty($term)) continue;
 
-                // get term id
+            // check term is exists
+            $bind = array(
+                "term" => $term
+            );
+            $sql = get_bind_to_sql_select("autoget_terms", $bind, array(
+                "getcount" => true
+            ));
+            $row = exec_db_fetch($sql, $bind);
+
+            // add new term
+            if($row['value'] == 0) {
                 $bind = array(
-                    "term" => $term
+                    "term" => $term,
+                    "count" => 0,
+                    "datetime" => $now_dt,
+                    "last" => $now_dt
                 );
-                $sql = get_bind_to_sql_select("autoget_terms", $bind);
-                $row = exec_db_fetch($sql, $bind);
-                $term_id = get_value_in_array("id", $row, 0);
+                $sql = get_bind_to_sql_insert("autoget_terms", $bind);
+                exec_db_query($sql, $bind);
+            }
 
-                // count up
-                $sql = "update autoget_terms set count = count + 1, last = :last where id = :id";
+            // get term_id
+            $bind = array(
+                "term" => $term
+            );
+            $sql = get_bind_to_sql_select("autoget_terms", $bind);
+            $row = exec_db_fetch($sql, $bind);
+            $term_id = get_value_in_array("id", $row, 0);
+
+            // check term_id is not empty
+            if(!empty($term_id)) {
+                // term count up
                 $bind = array(
                     "id" => $term_id,
                     "last" => $now_dt
                 );
+                $sql = "update autoget_terms set count = count + 1, last = :last where id = :id";
                 exec_db_query($sql, $bind);
 
                 // add word to sheet
@@ -289,7 +291,6 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
                 );
                 $sql = get_bind_to_sql_insert($sheet_tablename, $bind);
                 exec_db_query($sql, $bind);
-
             }
         }
     }
