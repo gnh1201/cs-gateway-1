@@ -63,7 +63,7 @@ if(!array_key_empty("id", $device)) {
         "setlimit" => 1,
         "setpage" => 1,
         "setorders" => array(
-            array("asc", "id")
+            array("asc", "expired_on") // `asc:expired_on` means set high priority to close deadlines
         )
     ));
     $rows = exec_db_fetch_all($sql, $bind);
