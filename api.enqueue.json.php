@@ -5,6 +5,9 @@ $data = array(
     "success" => false
 );
 
+// get now
+$now_dt = get_current_datetime();
+
 // get devices
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
@@ -68,7 +71,7 @@ foreach($devices as $device) {
             "jobkey" => "cmd",
             "jobstage" => $_row['id'],
             "message" => $_row['command'],
-            "created_on" => get_current_datetime(),
+            "created_on" => $now_dt,
             "expired_on" => get_current_datetime(array(
                 "now" => $now_dt,
                 "adjust" => "10m"
