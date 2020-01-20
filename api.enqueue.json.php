@@ -78,15 +78,15 @@ foreach($devices as $device) {
         exec_db_query($__sql, $__bind);
         
         // update to queue last
-        $bind = array(
+        $__bind = array(
             "device_id" => $device_id,
             "command_id" => $_row['id'],
             "queue_last" => $now_dt
         );
-        $sql = get_bind_to_sql_update("autoget_lasts", $bind, array(
+        $__sql = get_bind_to_sql_update("autoget_lasts", $__bind, array(
             "setkeys" => array("device_id", "command_id")
         ));
-        exec_db_query($sql, $bind);
+        exec_db_query($__sql, $__bind);
     }
 }
 
