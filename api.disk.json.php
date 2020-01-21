@@ -120,6 +120,8 @@ if($mode == "background") {
         "name" => array("varchar", 255),
         "total" => array("bigint", 20),
         "available" => array("bigint", 20),
+        "used" => array("bigint", 20),
+        "load" => array("float", "5,2"),
         "basetime" => array("datetime")
     ), "autoget_data_disk", array(
         "setindex" => array(
@@ -129,11 +131,14 @@ if($mode == "background") {
     
     // insert data
     foreach($rows as $row) {
+        $used = $row['total'] - $row['available'];
         $bind = array(
             "device_id" => $device_id,
             "name" => $row['name'],
             "total" => $row['total'],
             "available" => $row['available'],
+            "used" => $used,
+            "load" => ($used / $row['total']) * 100,
             "basetime" => $now_dt
         );
         $sql = get_bind_to_sql_insert($tablename, $bind);

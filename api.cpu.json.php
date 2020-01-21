@@ -102,7 +102,6 @@ if($mode == "background") {
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt group by basetime
     ";
     $rows = exec_db_fetch_all($sql, $bind);
-    var_dump(get_db_binded_sql($sql, $bind));
 
     // create table
     $tablename = exec_db_table_create(array(
@@ -136,7 +135,7 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-        select ifnull(max(`load`), 0.0) as `load`, max(`core`) as `core`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
+        select ifnull(avg(`load`), 0.0) as `load`, max(`core`) as `core`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
             from autoget_data_cpu
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey

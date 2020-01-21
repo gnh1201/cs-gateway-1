@@ -113,11 +113,11 @@ switch($type) {
             "end_dt" => $now_dt,
             "start_dt" => get_current_datetime(array(
                 "now" => $now_dt,
-                "adjust" => "-15m"
+                "adjust" => "-20m"
             ))
         );
         $sql = "
-            select a.device_id as device_id, b.computer_name as device_name, if(a.`load` > 100, 96, a.`load`) as `load` from (
+            select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
                 select device_id,  max(`load`) as `load` from autoget_data_cpu
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
@@ -131,15 +131,15 @@ switch($type) {
             "end_dt" => $now_dt, 
             "start_dt" => get_current_datetime(array(
                 "now" => $now_dt,
-                "adjust" => "-15m"
+                "adjust" => "-20m"
             ))
         );
         $sql = "
-            select a.device_id as device_id, b.computer_name as device_name, if(a.`load` > 100, 96, a.`load`) as `load` from (
+            select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
                 select device_id, max(`load`) as `load` from autoget_data_mem
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
-            ) a, autoget_devices b where a.device_id = b.id order by `load` desc limit 10
+            ) a, autoget_devices b where a.device_id = b.id and `load` < 100 order by `load` desc limit 10
         ";
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['memlasts'] = $rows;

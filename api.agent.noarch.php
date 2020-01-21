@@ -51,6 +51,16 @@ if(!array_key_empty("id", $device)) {
     $device_os = strtolower($device['os']);
     $device_id = $device['id'];
 
+    // update last datetime
+    $bind = array(
+        "device_id" => $device_id,
+        "last" => $now_dt
+    );
+    $sql = get_bind_to_sql_update("autoget_devices", $bind, array(
+        "setkeys" => array("device_id")
+    ));
+    exec_db_query($sql, $bind);
+
     // check TX queue
     $bind = array(
         "device_id" => $device_id
@@ -76,12 +86,11 @@ if(!array_key_empty("id", $device)) {
 
         // update is_read flag of queue
         $_bind = array(
+            "id" => $row['id'],
             "is_read" => 1
         );
         $_sql = get_bind_to_sql_update("autoget_tx_queue", $_bind, array(
-            "setwheres" => array(
-                array("and", array("eq", "id", $row['id']))
-            )
+            "setkeys" => array("id")
         ));
         exec_db_query($_sql, $_bind);
 
@@ -91,12 +100,11 @@ if(!array_key_empty("id", $device)) {
 
             // update last datetime
             $_bind = array(
+                "id" => $row['jobstage'],
                 "last" => $now_dt
             );
             $_sql = get_bind_to_sql_update("autoget_commands", $_bind, array(
-                "setwheres" => array(
-                    array("and", array("eq", "id", $row['jobstage']))
-                )
+                "setkeys" => array("id")
             ));
             exec_db_query($_sql, $_bind);
         } else {
