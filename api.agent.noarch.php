@@ -53,11 +53,11 @@ if(!array_key_empty("id", $device)) {
 
     // update last datetime
     $bind = array(
-        "device_id" => $device_id,
+        "id" => $device_id,
         "last" => $now_dt
     );
     $sql = get_bind_to_sql_update("autoget_devices", $bind, array(
-        "setkeys" => array("device_id")
+        "setkeys" => array("id")
     ));
     exec_db_query($sql, $bind);
 

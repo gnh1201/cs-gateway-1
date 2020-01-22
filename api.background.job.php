@@ -3,17 +3,23 @@ loadHelper("webpagetool");
 
 $action = get_requested_value("action");
 $adjust = get_requested_value("adjust");
+$end_dt = get_requested_value("end_dt");
+$start_dt = get_requested_value("start_dt");
 
 if(empty($adjust)) {
     $adjust = "-10m";
 }
 
-$end_dt = get_current_datetime();
+if(empty($end_dt)) {
+    $end_dt = get_current_datetime();
+}
 
-$start_dt = get_current_datetime(array(
-    "now" => $end_dt,
-    "adjust" => $adjust
-));
+if(empty($start_dt)) {
+    $start_dt = get_current_datetime(array(
+        "now" => $end_dt,
+        "adjust" => $adjust
+    ));
+}
 
 $responses = array();
 
@@ -23,7 +29,7 @@ $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
 ));
 $devices = exec_db_fetch_all($sql, $bind);
 
-if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap"))) {
+if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "report.data", "report.excel"))) {
     foreach($devices as $device) {
         switch($action) {
             case "cpucore":
@@ -113,6 +119,30 @@ if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
+                ));
+                break;
+                
+            case "report.data":
+                // create report data
+                $responses[] = get_web_ page(get_route_link("api.report.json"), "get", array(
+                    "adjust" => $adjust,
+                    "mode" => "table.insert"
+                ));
+                break;
+
+            case "report.excel":
+                // overrride time range
+                $end_dt = date("Y-m-d 18:00:00");
+                $start_dt = get_current_datetime(array(
+                    "now" => $end_dt,
+                    "adjust" => $adjust
+                ));
+
+                // make report excel
+                $responses[] = get_web_ page(get_route_link("api.report.json"),, "get", array(
+                    "end_dt" => $end_dt,
+                    "adjust" => $adjust,
+                    "mode" => "make.excel"
                 ));
                 break;
         }
