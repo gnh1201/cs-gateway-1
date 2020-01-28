@@ -1,6 +1,10 @@
 <?php
+loadHelper("webpagetool");
+
+$device_id = get_requested_value("device_id");
+$category_id = get_requested_value("category_id");
+
 $mode = get_requested_value("mode");
-//$device_id = get_requested_value("device_id");
 $output = get_requested_value("output");
 
 // set datetime
@@ -40,7 +44,11 @@ if($mode == "table.insert") {
     $devices = exec_db_fetch_all($sql, $bind);
 
     foreach($devices as $device) {
-            $bind = array(
+        if(!empty($device_id)) {
+            if($device_id != $device['id']) continue;
+        }
+        
+        $bind = array(
             "device_id" => $device['id'],
             "start_dt" => $start_dt,
             "end_dt" => $end_dt
@@ -48,6 +56,27 @@ if($mode == "table.insert") {
         $sql = get_bind_to_sqlx("autoget_detail_report");
         $rows = exec_db_fetch_all($sql, $bind);
         foreach($rows as $row) {
+            $net_qty = 0;
+            $net_max_load = 0;
+            $net_avg_load = 0;
+
+            // get network load from zabbix
+            $response = get_web_json(get_route_link("api.report.network.json"), "get", array(
+                "now_dt" => $end_dt,
+                "adjust" => $adjust,
+                "hostips" => current(explode(",", $device['net_ip']))
+            ));
+
+            foreach($response->data as $record) {
+                if($record->timekey == $row['timekey']) {
+                    $net_qty = $record->qty;
+                    $net_max_load = $record->max_value;
+                    $net_avg_load = $record->avg_value;
+                    break;
+                }
+            }
+
+            // build values
             $bind = array(
                 "device_id" => $row['device_id'],
                 "basetime" => $row['basetime'],
@@ -55,13 +84,14 @@ if($mode == "table.insert") {
                 "cpu_avg_load" => $row['cpu_avg_load'],
                 "mem_max_load" => $row['mem_max_load'],
                 "mem_avg_load" => $row['mem_avg_load'],
-                "net_qty" => "",
-                "net_avg_load" => "",
-                "net_max_load" => "",
+                "net_qty" => $net_qty,
+                "net_max_load" => $net_max_load,
+                "net_avg_load" => $net_avg_load,
                 "disk_qty" => $row['disk_qty'],
                 "disk_max_load" => $row['disk_max_load'],
                 "disk_avg_load" => $row['disk_avg_load']
             );
+            
             $sql = get_bind_to_sql_insert("autoget_summaries", $bind);
             exec_db_query($sql, $bind);
         }
@@ -305,67 +335,19 @@ if($mode == "make.excel") {
     $data['success'] = true;
     $data['filename'] = $fw;
 } else {
-    //$bind = array(
-    //   "device_id" => $device_id
-    //);
-    $bind = false;
-    $limit = 100;
-    
-    if($output == "daily") {
-        $limit = 31;
-    }
-    
-    if($output == "monthly") {
-        $limit = 12;
-    }
-    
-    if($output == "weekly") {
-        $limit = 48;
-    }
-    
+    $limit = 10000;
+    $bind = array(
+        "category_id" => $category_id
+    );
     $sql = get_bind_to_sql_select("autoget_reports", $bind, array(
         "setlimit" => $limit,
         "setpage" => 1,
         "setorders" => array(
-            array("desc", "type"),
             array("desc", "basetime")
-        ),
-        //"setwheres" => array(
-        //    array("or", array("eq", "type", "summary"))
-        //)
+        )
     ));
     $rows = exec_db_fetch_all($sql, $bind);
-    
-    $a1 = explode(",", "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec");
-    $i = 0;
-    if($output == "monthly") {
-        foreach($rows as $k=>$v) {
-            $rows[$k]['basetime'] = "";
-            $rows[$k]['type'] = $a1[$i];
-            $i++;
-        }
-    }
-    
-    $i = 0;
-    if($output == "weekly") {
-        foreach($rows as $k=>$v) {
-            $rows[$k]['basetime'] = "";
-            $rows[$k]['type'] = "W" . ($i + 1);
-            $i++;
-        }
-    }
-    
-    $i = 0;
-    if($output == "daily") {
-        foreach($rows as $k=>$v) {
-            if($i > 21) {
-                $rows[$k]['basetime'] = "";
-            }
-            $rows[$k]['type'] = "D" . ($i + 1);
-            $i++;
-        }
-    }
- 
+
     $data['success'] = true;
     $data['data'] = $rows;
 }

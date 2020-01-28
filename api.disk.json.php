@@ -105,7 +105,7 @@ if($mode == "background") {
                 $_tbl1 a
                 left join autoget_terms b on a.term_id = b.id
             group by
-                a.col_y, a.datetime
+                a.pos_y, a.datetime
         ";
         $_tbl2 = exec_db_temp_start($sql, false);
 

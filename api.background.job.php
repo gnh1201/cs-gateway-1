@@ -124,7 +124,7 @@ if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "
                 
             case "report.data":
                 // create report data
-                $responses[] = get_web_ page(get_route_link("api.report.json"), "get", array(
+                $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
                     "adjust" => $adjust,
                     "mode" => "table.insert"
                 ));
@@ -139,7 +139,7 @@ if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "
                 ));
 
                 // make report excel
-                $responses[] = get_web_ page(get_route_link("api.report.json"),, "get", array(
+                $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
                     "end_dt" => $end_dt,
                     "adjust" => $adjust,
                     "mode" => "make.excel"
