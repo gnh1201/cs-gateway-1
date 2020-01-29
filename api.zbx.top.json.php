@@ -3,6 +3,7 @@ loadHelper("json.format");
 loadHelper("zabbix.api");
 
 $uri = get_uri();
+$panel_hash = "";
 
 $_p = explode("/", $uri);
 $_data = array();
@@ -19,6 +20,19 @@ if(in_array("query", $_p)) {
     $itemnames = array();
     $hostips = array();
     $targets = get_requested_value("targets", array("_JSON"));
+    $panel_id = get_requested_value("panelId", array("_JSON"));
+    $panel_hash = get_hashed_text(serialize(array("" => $panel_id, "targets" => $targets)));
+
+    // get saved data
+    $filename = $panel_hash;
+    $fr = read_storage_file($filename, array(
+        "storage_type" => "cache"
+    ));
+    if(!empty($fr)) {
+        echo $fr;
+        exit;
+    }
+
     foreach($targets as $target) {
         switch($target->target) {
             case "itemnames":
@@ -86,8 +100,19 @@ if(in_array("query", $_p)) {
         "rows" => $rows,
         "type" => "table"
     );
-
 }
 
+write_common_log($uri, "api.zbx.top.json");
+write_common_log($requests['_RAW'], "api.zbx.top.json");
+
 header("Content-Type: application/json");
-echo json_encode_ex($_data);
+$result = json_encode($_data);
+
+if(!empty($panel_hash)) {
+    $fw = write_storage_file($result, array(
+        "storage_type" => "cache",
+        "filename" => $panel_hash
+    ));
+}
+
+echo $result;

@@ -123,10 +123,18 @@ if(in_array($action, $allow_actions)) {
                     "mode" => "background"
                 ));
                 break;
-                
+
             case "report.data":
+               // overrride time range
+                $end_dt = date(sprintf("Y-m-%02d 00:00:00", date("d") + 1));
+                $start_dt = get_current_datetime(array(
+                    "now" => $end_dt,
+                    "adjust" => $adjust
+                ));
+
                 // create report data
                 $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+                    "end_dt" => $end_dt,
                     "adjust" => $adjust,
                     "mode" => "table.insert"
                 ));
@@ -146,28 +154,6 @@ if(in_array($action, $allow_actions)) {
                     "adjust" => $adjust,
                     "mode" => "make.excel"
                 ));
-                break;
-
-            case "report.batch":
-                $ds = range(1, 30);
-                foreach($ds as $d) {
-                    $_end_dt = date(sprintf("Y-m-%02d 00:00:00", $d + 1));
-                    // create report data
-                    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
-                        "end_dt" => $_end_dt,
-                        "adjust" => "-24h",
-                        "mode" => "table.insert"
-                    ));
-
-                    // make report excel
-                    $_end_dt = date(sprintf("Y-m-%02d 18:00:00", $d));
-                    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
-                        "end_dt" => $_end_dt,
-                        "adjust" => "-10h",
-                        "mode" => "make.excel"
-                    ));
-                }
-
                 break;
         }
     }

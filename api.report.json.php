@@ -4,6 +4,8 @@ loadHelper("webpagetool");
 $device_id = get_requested_value("device_id");
 $category_id = get_requested_value("category_id");
 
+$plan = get_requested_value("plan"); // daily, weekly, monthly
+
 $mode = get_requested_value("mode");
 $output = get_requested_value("output");
 
