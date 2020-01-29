@@ -23,13 +23,15 @@ if(empty($start_dt)) {
 
 $responses = array();
 
+$allow_actions = array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "report.data", "report.excel", "report.batch");
+
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
     "fieldnames" => "id"
 ));
 $devices = exec_db_fetch_all($sql, $bind);
 
-if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "report.data", "report.excel"))) {
+if(in_array($action, $allow_actions)) {
     foreach($devices as $device) {
         switch($action) {
             case "cpucore":
@@ -144,6 +146,28 @@ if(in_array($action, array("cpucore", "cputime", "cpu", "memtotal", "memtime", "
                     "adjust" => $adjust,
                     "mode" => "make.excel"
                 ));
+                break;
+
+            case "report.batch":
+                $ds = range(1, 30);
+                foreach($ds as $d) {
+                    $_end_dt = date(sprintf("Y-m-%02d 00:00:00", $d + 1));
+                    // create report data
+                    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+                        "end_dt" => $_end_dt,
+                        "adjust" => "-24h",
+                        "mode" => "table.insert"
+                    ));
+
+                    // make report excel
+                    $_end_dt = date(sprintf("Y-m-%02d 18:00:00", $d));
+                    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+                        "end_dt" => $_end_dt,
+                        "adjust" => "-10h",
+                        "mode" => "make.excel"
+                    ));
+                }
+
                 break;
         }
     }

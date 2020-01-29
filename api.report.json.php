@@ -180,21 +180,18 @@ if($mode == "make.excel") {
                             $summary_sheet->setCellValue($cell, $row['mem_avg_load']);
                             break;
                         case "H":
-                            $summary_sheet->setCellValue($cell, $row['net_qty']); // network QTY
-                            break;
-                        case "I":
                             $summary_sheet->setCellValue($cell, $row['net_max_load']); // network MAX
                             break;
-                        case "J":
+                        case "I":
                             $summary_sheet->setCellValue($cell,  $row['net_avg_load']); // network AVG
                             break;
-                        case "K":
+                        case "J":
                             $summary_sheet->setCellValue($cell, $row['disk_qty']);
                             break;
-                        case "L":
+                        case "K":
                             $summary_sheet->setCellValue($cell, $row['disk_max_load']);
                             break;
-                        case "M":
+                        case "L":
                             $summary_sheet->setCellValue($cell, $row['disk_avg_load']);
                             break;
                         default:
@@ -277,21 +274,18 @@ if($mode == "make.excel") {
                             $detail_sheet->setCellValue($cell, $row['mem_avg_load']);
                             break;
                         case "H":
-                            $summary_sheet->setCellValue($cell, $row['net_qty']); // network QTY
-                            break;
-                        case "I":
                             $summary_sheet->setCellValue($cell, $row['net_max_load']); // network MAX
                             break;
-                        case "J":
+                        case "I":
                             $summary_sheet->setCellValue($cell,  $row['net_avg_load']); // network AVG
                             break;
-                        case "K":
+                        case "J":
                             $detail_sheet->setCellValue($cell, $row['disk_qty']);
                             break;
-                        case "L":
+                        case "K":
                             $detail_sheet->setCellValue($cell, $row['disk_max_load']);
                             break;
-                        case "M":
+                        case "L":
                             $detail_sheet->setCellValue($cell, $row['disk_avg_load']);
                             break;
                     }
