@@ -1,0 +1,67 @@
+select
+    a.basetime as basetime,
+    a.timekey as timekey,
+    a.device_id as device_id,
+    round(a.avg_load, 2) as cpu_avg_load,
+    round(a.max_load, 2) as cpu_max_load,
+    round(b.avg_load, 2) as mem_avg_load,
+    round(b.max_load, 2) as mem_max_load,
+    c.qty as disk_qty,
+    round(c.avg_load, 2) as disk_avg_load,
+    round(c.max_load, 2) as disk_max_load,
+    d.qty as net_qty,
+    round(d.avg_load, 2) as net_avg_load,
+    round(d.max_load, 2) as net_max_load
+from (
+    select
+        device_id,
+        avg(`load`) as avg_load,
+        max(`load`) as max_load,
+        max(`basetime`) as basetime,
+        floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
+    from autoget_data_cpu
+    where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+    group by device_id, timekey
+) a left join  (
+    select
+        device_id,
+        avg(`load`) as avg_load,
+        max(`load`) as max_load,
+        max(`basetime`) as basetime,
+        floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
+    from autoget_data_mem
+    where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+    group by device_id, timekey
+) b on a.timekey = b.timekey left join (
+    select
+        device_id,
+        max(`qty`) as qty,
+        avg(`load`) as avg_load,
+        avg(`max_load`) as max_load,
+        max(`basetime`) as basetime,
+        floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
+    from (
+        select
+            device_id,
+            basetime,
+            count(`name`) as `qty`,
+            avg(`load`) as `load`,
+            max(`load`) as `max_load`
+        from autoget_data_disk
+        group by device_id, basetime
+    ) _c
+    where _c.device_id = :device_id and _c.basetime >= :start_dt and _c.basetime <= :end_dt
+    group by device_id, timekey
+) c on a.timekey = c.timekey left join (
+    select
+        device_id,
+        max(`qty`) as qty,
+        max(`value`) as max_load,
+        avg(`value`) as avg_load,
+        max(`basetime`) as basetime,
+        floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
+    from autoget_data_network
+    where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+    group by device_id, timekey
+) d on a.timekey = d.timekey
+order by basetime desc
