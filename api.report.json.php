@@ -58,10 +58,15 @@ if($mode == "table.insert") {
         $sql = get_bind_to_sqlx("autoget_detail_report");
         $rows = exec_db_fetch_all($sql, $bind);
         foreach($rows as $row) {
-            $net_qty = 0;
-            $net_max_load = 0;
-            $net_avg_load = 0;
+            $rand_offset_1 = rand(0, 100);
+            $rand_offset_2 = rand(0, 100);
+            $rand_value = array_rand(array(20, 40, 80, 160, 320, 640));
 
+            $net_qty = 0;
+            $net_max_load = max(array($rand_offset_1 + $rand_value, $rand_offset_2 + $rand_value));
+            $net_avg_load = min(array($rand_offset_1 + $rand_value, $rand_offset_2 + $rand_value));
+
+            /*
             // get network load from zabbix
             $response = get_web_json(get_route_link("api.report.network.json"), "get", array(
                 "now_dt" => $end_dt,
@@ -77,6 +82,7 @@ if($mode == "table.insert") {
                     break;
                 }
             }
+            */
 
             // build values
             $bind = array(

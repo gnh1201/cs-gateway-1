@@ -23,7 +23,7 @@ if(empty($start_dt)) {
 
 $responses = array();
 
-$allow_actions = array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "report.data", "report.excel", "report.batch");
+$allow_actions = array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "network", "report.data", "report.excel", "report.batch");
 
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
@@ -118,6 +118,15 @@ if(in_array($action, $allow_actions)) {
             case "user":
                 // get user data
                 $responses[] = get_web_page(get_route_link("api.user.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background"
+                ));
+                break;
+
+            case "network":
+                // get network data (zabbix)
+                $responses[] = get_web_page(get_route_link("api.network.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
