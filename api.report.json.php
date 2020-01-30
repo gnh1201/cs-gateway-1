@@ -55,35 +55,9 @@ if($mode == "table.insert") {
             "start_dt" => $start_dt,
             "end_dt" => $end_dt
         );
-        $sql = get_bind_to_sqlx("autoget_detail_report");
+        $sql = get_bind_to_sqlx("autoget_detail_report");        
         $rows = exec_db_fetch_all($sql, $bind);
         foreach($rows as $row) {
-            $rand_offset_1 = rand(0, 100);
-            $rand_offset_2 = rand(0, 100);
-            $rand_value = array_rand(array(20, 40, 80, 160, 320, 640));
-
-            $net_qty = 0;
-            $net_max_load = max(array($rand_offset_1 + $rand_value, $rand_offset_2 + $rand_value));
-            $net_avg_load = min(array($rand_offset_1 + $rand_value, $rand_offset_2 + $rand_value));
-
-            /*
-            // get network load from zabbix
-            $response = get_web_json(get_route_link("api.report.network.json"), "get", array(
-                "now_dt" => $end_dt,
-                "adjust" => $adjust,
-                "hostips" => current(explode(",", $device['net_ip']))
-            ));
-
-            foreach($response->data as $record) {
-                if($record->timekey == $row['timekey']) {
-                    $net_qty = $record->qty;
-                    $net_max_load = $record->max_value;
-                    $net_avg_load = $record->avg_value;
-                    break;
-                }
-            }
-            */
-
             // build values
             $bind = array(
                 "device_id" => $row['device_id'],
@@ -92,9 +66,9 @@ if($mode == "table.insert") {
                 "cpu_avg_load" => $row['cpu_avg_load'],
                 "mem_max_load" => $row['mem_max_load'],
                 "mem_avg_load" => $row['mem_avg_load'],
-                "net_qty" => $net_qty,
-                "net_max_load" => $net_max_load,
-                "net_avg_load" => $net_avg_load,
+                "net_qty" => $row['net_qty'],
+                "net_max_load" => $row['net_max_load'],
+                "net_avg_load" => $row['net_avg_load'],
                 "disk_qty" => $row['disk_qty'],
                 "disk_max_load" => $row['disk_max_load'],
                 "disk_avg_load" => $row['disk_avg_load']
@@ -148,16 +122,16 @@ if($mode == "make.excel") {
             select
                 device_id,
                 max(basetime) as basetime,
-                max(cpu_max_load) as cpu_max_load,
-                avg(cpu_avg_load) as cpu_avg_load,
-                max(mem_max_load) as mem_max_load,
-                avg(mem_avg_load) as mem_avg_load,
+                round(max(cpu_max_load), 2) as cpu_max_load,
+                round(avg(cpu_avg_load), 2) as cpu_avg_load,
+                round(max(mem_max_load), 2) as mem_max_load,
+                round(avg(mem_avg_load), 2) as mem_avg_load,
                 max(net_qty) as net_qty,
-                max(net_max_load) as net_max_load,
-                avg(net_avg_load) as net_avg_load,
+                round(max(net_max_load), 2) as net_max_load,
+                round(avg(net_avg_load), 2) as net_avg_load,
                 max(disk_qty) as disk_qty,
-                max(disk_max_load) as disk_max_load,
-                avg(disk_avg_load) as disk_avg_load
+                round(max(disk_max_load), 2) as disk_max_load,
+                round(avg(disk_avg_load), 2) as disk_avg_load
             from autoget_summaries
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         ";
@@ -188,18 +162,21 @@ if($mode == "make.excel") {
                             $summary_sheet->setCellValue($cell, $row['mem_avg_load']);
                             break;
                         case "H":
-                            $summary_sheet->setCellValue($cell, $row['net_max_load']); // network MAX
+                            $summary_sheet->setCellValue($cell, $row['net_qty']);
                             break;
                         case "I":
-                            $summary_sheet->setCellValue($cell,  $row['net_avg_load']); // network AVG
+                            $summary_sheet->setCellValue($cell, $row['net_max_load']);
                             break;
                         case "J":
-                            $summary_sheet->setCellValue($cell, $row['disk_qty']);
+                            $summary_sheet->setCellValue($cell,  $row['net_avg_load']);
                             break;
                         case "K":
-                            $summary_sheet->setCellValue($cell, $row['disk_max_load']);
+                            $summary_sheet->setCellValue($cell, $row['disk_qty']);
                             break;
                         case "L":
+                            $summary_sheet->setCellValue($cell, $row['disk_max_load']);
+                            break;
+                        case "M":
                             $summary_sheet->setCellValue($cell, $row['disk_avg_load']);
                             break;
                         default:
@@ -241,23 +218,22 @@ if($mode == "make.excel") {
             select
                 device_id,
                 max(basetime) as basetime,
-                max(cpu_max_load) as cpu_max_load,
-                avg(cpu_avg_load) as cpu_avg_load,
-                max(mem_max_load) as mem_max_load,
-                avg(mem_avg_load) as mem_avg_load,
+                round(max(cpu_max_load), 2) as cpu_max_load,
+                round(avg(cpu_avg_load), 2) as cpu_avg_load,
+                round(max(mem_max_load), 2) as mem_max_load,
+                round(avg(mem_avg_load), 2) as mem_avg_load,
                 max(net_qty) as net_qty,
-                max(net_max_load) as net_max_load,
-                avg(net_avg_load) as net_avg_load,
+                round(max(net_max_load), 2) as net_max_load,
+                round(avg(net_avg_load), 2) as net_avg_load,
                 max(disk_qty) as disk_qty,
-                max(disk_max_load) as disk_max_load,
-                avg(disk_avg_load) as disk_avg_load,
+                round(max(disk_max_load), 2) as disk_max_load,
+                round(avg(disk_avg_load), 2) as disk_avg_load,
                 floor(unix_timestamp(basetime) / 15 * 60) as timekey
             from autoget_summaries
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey order by basetime asc
         ";
         $rows = exec_db_fetch_all($sql, $bind);
-
         $row_offset = 13;
         $col_offsets = range('A', 'M');
         $row_n = 0;
@@ -266,7 +242,6 @@ if($mode == "make.excel") {
                     $cell = sprintf("%s%s", $col_offset, $row_offset + $row_n);
                     switch($col_offset) {
                         case "A":
-                            $detail_sheet->mergeCells(sprintf("%s:%s", $cell, sprintf("C%s", $row_offset + $row_n)));
                             $detail_sheet->setCellValue($cell, $row['basetime']);
                             break;
                         case "D":
@@ -282,20 +257,25 @@ if($mode == "make.excel") {
                             $detail_sheet->setCellValue($cell, $row['mem_avg_load']);
                             break;
                         case "H":
-                            $summary_sheet->setCellValue($cell, $row['net_max_load']); // network MAX
+                            $detail_sheet->setCellValue($cell, $row['net_qty']);
                             break;
                         case "I":
-                            $summary_sheet->setCellValue($cell,  $row['net_avg_load']); // network AVG
+                            $detail_sheet->setCellValue($cell, $row['net_max_load']);
                             break;
                         case "J":
-                            $detail_sheet->setCellValue($cell, $row['disk_qty']);
+                            $detail_sheet->setCellValue($cell,  $row['net_avg_load']);
                             break;
                         case "K":
-                            $detail_sheet->setCellValue($cell, $row['disk_max_load']);
+                            $detail_sheet->setCellValue($cell, $row['disk_qty']);
                             break;
                         case "L":
+                            $detail_sheet->setCellValue($cell, $row['disk_max_load']);
+                            break;
+                        case "M":
                             $detail_sheet->setCellValue($cell, $row['disk_avg_load']);
                             break;
+                        default:
+                            continue;
                     }
             }
 

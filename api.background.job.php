@@ -132,40 +132,34 @@ if(in_array($action, $allow_actions)) {
                     "mode" => "background"
                 ));
                 break;
-
-            case "report.data":
-               // overrride time range
-                $end_dt = date(sprintf("Y-m-%02d 00:00:00", date("d") + 1));
-                $start_dt = get_current_datetime(array(
-                    "now" => $end_dt,
-                    "adjust" => $adjust
-                ));
-
-                // create report data
-                $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
-                    "end_dt" => $end_dt,
-                    "adjust" => $adjust,
-                    "mode" => "table.insert"
-                ));
-                break;
-
-            case "report.excel":
-                // overrride time range
-                $end_dt = date("Y-m-d 18:00:00");
-                $start_dt = get_current_datetime(array(
-                    "now" => $end_dt,
-                    "adjust" => $adjust
-                ));
-
-                // make report excel
-                $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
-                    "end_dt" => $end_dt,
-                    "adjust" => $adjust,
-                    "mode" => "make.excel"
-                ));
-                break;
         }
     }
+}
+
+if($action == "report.data") {
+   // overrride time range
+    $end_dt = date(sprintf("Y-m-%02d 00:00:00", date("d") + 1));
+    $adjust = "-24h";
+
+    // create report data
+    $responses[] = get_web_json(get_route_link("api.report.json"), "get", array(
+        "end_dt" => $end_dt,
+        "adjust" => $adjust,
+        "mode" => "table.insert"
+    ));
+}
+
+if($action == "report.excel") {
+    // overrride time range
+    $end_dt = date("Y-m-d 18:00:00");
+    $adjust = "-10h";
+
+    // make report excel
+    $responses[] = get_web_json(get_route_link("api.report.json"), "get", array(
+        "end_dt" => $end_dt,
+        "adjust" => $adjust,
+        "mode" => "make.excel"
+    ));
 }
 
 if($action == "flush_sheets") {

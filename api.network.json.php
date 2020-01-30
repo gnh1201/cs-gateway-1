@@ -13,7 +13,7 @@ $start_dt = get_requested_value("start_dt");
 $adjust = get_requested_value("adjust");
 
 if(empty($adjust)) {
-    $adjust = "-10m";
+    $adjust = "-20m";
 }
 
 if(empty($end_dt)) {
@@ -83,8 +83,8 @@ if($mode == "background") {
     }
 
     $sql = "
-        select count(a.itemid) as qty, sum(a.max_value) as max_value, sum(a.avg_value) as avg_value, a.timekey as timekey, a.basetime as basetime from (
-            select itemid, (max(value) / pow(1024, 2) / 8) as max_value, (avg(value) / pow(1024, 2) / 8) as avg_value, floor(clock / (5 * 60)) as timekey, max(from_unixtime(clock)) as basetime from $tablename group by itemid, timekey
+        select count(a.itemid) as qty, sum(a.value) as value, a.timekey as timekey, a.basetime as basetime from (
+            select itemid, (avg(value) / pow(1024, 2) / 8) as value, floor(clock / (5 * 60)) as timekey, max(from_unixtime(clock)) as basetime from $tablename group by itemid, timekey
         ) a group by a.timekey order by timekey asc
     ";
     $rows = exec_db_fetch_all($sql);
@@ -92,8 +92,7 @@ if($mode == "background") {
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
         "qty" => array("int", 2),
-        "max_value" => array("float", "20,2"),
-        "avg_value" => array("float", "20,2"),
+        "value" => array("float", "20,2"),
         "basetime" => array("datetime"),
     ), "autoget_data_network", array(
         "setindex" => array(
@@ -103,25 +102,21 @@ if($mode == "background") {
 
     // calculate delta
     $_rows = array();
-    $_max_value = -1;
-    $_avg_value = -1;
+    $_value = -1;
     foreach($rows as $row) {
-        if($_max_value < 0) {
-            $max_value = 0;
-            $avg_value = 0;
-            $_max_value = $row['max_value'];
-            $_avg_value = $row['avg_value'];
+        if($_value < 0) {
+            $_value = $row['value'];
         } else {
-            $max_value = $row['max_value'] - $_max_value;
-            $avg_value = $row['avg_value'] - $_avg_value;
-            $_max_value = $max_value;
-            $_avg_value = $avg_value;
+            $value = $row['value'] - $_value;
+            
+            if($value < 0) break;
+            
+            $_value = $row['value'];
 
             $bind = array(
                 "device_id" => $device_id,
                 "qty" => $row['qty'],
-                "max_value" => $max_value,
-                "avg_value" => $avg_value,
+                "value" => $value,
                 "basetime" => $row['basetime']
             );
             $sql = get_bind_to_sql_insert($tablename, $bind);
@@ -132,18 +127,20 @@ if($mode == "background") {
     $data['success'] = true;
 } else {
     $bind = array(
-        "device_id" => $device_id
+        "device_id" => $device_id,
+        "start_dt" => $start_dt,
+        "end_dt" => $end_dt
     );
-    $sql = get_bind_to_sql_select("autoget_data_network", $bind, array(
-        "setwheres" => array(
-            array("and", array("lte", "basetime", $end_dt)),
-            array("and", array("gte", "basetime", $start_dt))
-        )
-    ));
+    $sql = "
+        select avg(`value`) as `value`, max(`qty`) as `qty`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
+            from autoget_data_network
+            where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+            group by timekey
+    ";
     $rows = exec_db_fetch_all($sql, $bind);
 
     $data['success'] = true;
-    $data['data'] = $_rows;
+    $data['data'] = $rows;
 }
 
 header("Content-Type: application/json");
