@@ -137,9 +137,9 @@ if(in_array($action, $allow_actions)) {
 }
 
 if($action == "report.data") {
-   // overrride time range
-    $end_dt = date(sprintf("Y-m-%02d 00:00:00", date("d") + 1));
-    $adjust = "-24h";
+    // overrride time range
+    $end_dt = substr($end_dt, 0, 10) . " 23:59:59";
+    $adjust = get_requested_value("adjust");
 
     // create report data
     $responses[] = get_web_json(get_route_link("api.report.json"), "get", array(
@@ -151,14 +151,16 @@ if($action == "report.data") {
 
 if($action == "report.excel") {
     // overrride time range
-    $end_dt = date("Y-m-d 18:00:00");
-    $adjust = "-10h";
+    $end_dt = substr($end_dt, 0, 10) . " 18:00:00";
+    $adjust = get_requested_value("adjust");
+    $planner = get_requested_value("planner");
 
     // make report excel
-    $responses[] = get_web_json(get_route_link("api.report.json"), "get", array(
+    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
         "end_dt" => $end_dt,
         "adjust" => $adjust,
-        "mode" => "make.excel"
+        "mode" => "make.excel",
+        "planner" => $planner
     ));
 }
 
