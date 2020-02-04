@@ -1,5 +1,6 @@
 <?php
 loadHelper("string.utils");
+loadHelper("zabbix.api");
 
 $end_dt = get_requested_value("end_dt");
 $start_dt = get_requested_value("start_dt");
@@ -111,6 +112,94 @@ if($mode == "background") {
         $bind = array(
             "device_id" => $device_id,
             "load" => $row['load'],
+            "total" => $_total,
+            "basetime" => $row['basetime']
+        );
+        $sql = get_bind_to_sql_insert($tablename, $bind);
+        exec_db_query($sql, $bind);
+    }
+
+    $data['success'] = true;
+} elseif($mode == "background.zabbix") {
+    zabbix_authenticate();
+    
+    $hostips = array();
+    
+    $bind = array(
+        "id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_devices", $bind);
+    $devices = exec_db_fetch_all($sql, $bind);
+    foreach($devices as $device) {
+        $_hostips = array_filter(explode(",", $device['net_ip']));
+        $hostips = array_merge($hostips, $_hostips);
+    }
+
+    // get total of memory
+    $_total = 0;
+    $bind = array(
+        "device_id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_data_memtotal.zabbix", $bind);
+    $rows = exec_db_fetch_all($sql, $bind);
+    foreach($rows as $row) {
+        $_total += get_int($row['total']);
+    }
+
+    // get memory data from zabbix
+    $records = array();
+    $hosts = zabbix_get_hosts();
+    foreach($hosts as $host) {
+        foreach($host->interfaces as $interface) {
+            if(in_array($interface->ip, $hostips)) {
+                $items = zabbix_get_items($host->hostid);
+                foreach($items as $item) {
+                    if($item->name == "Memory Usage" && $item->status == "0") {
+                        $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
+                        $records = array_merge($records, $_records);
+                    }
+                }
+            }
+        }
+    }
+
+    $tablename = exec_db_temp_create(array(
+        "itemid" => array("int", 11),
+        "clock" => array("int", 11),
+        "value" => array("float", "5,2")
+    ));
+
+    foreach($records as $record) {
+        $bind = array(
+            "itemid" => $record->itemid,
+            "clock" => $record->clock,
+            "value" => $record->value
+        );
+        $sql = get_bind_to_sql_insert($tablename, $bind);
+        exec_db_query($sql, $bind);
+    }
+
+    $sql = "select itemid, avg(value) as value, floor(clock / (5 * 60)) as timekey, max(from_unixtime(clock)) as basetime from $tablename group by itemid, timekey";
+    $rows = exec_db_fetch_all($sql);
+
+    // create table
+    $tablename = exec_db_table_create(array(
+        "device_id" => array("int", 11),
+        "load" => array("float", "5,2"),
+        "total" => array("int", 45),
+        "basetime" => array("datetime")
+    ), "autoget_data_mem", array(
+        "suffix" => ".zabbix",
+        "setindex" => array(
+            "index_1" => array("device_id", "basetime")
+        )
+    ));
+
+    // insert selected rows
+    foreach($rows as $row) {
+        $bind = array(
+            "device_id" => $device_id,
+            "load" => $row['value'],
             "total" => $_total,
             "basetime" => $row['basetime']
         );

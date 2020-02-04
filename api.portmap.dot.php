@@ -144,9 +144,9 @@ if($mode == "background") {
             a.port as port,
             a.state as state,
             a.pid as pid
-        from $_tbl2 a left join $_tbl1 b on a.pid = b.pid";
+        from `$_tbl2` a left join `$_tbl1` b on a.pid = b.pid";
     } elseif($device['platform'] == "linux")  {
-        $sql = "select process_name, address, port, state, pid from $_tbl3";
+        $sql = "select process_name, address, port, state, pid from `$_tbl3`";
     }
     $_tbl4 = exec_db_temp_start($sql);
 

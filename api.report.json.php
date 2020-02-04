@@ -41,15 +41,17 @@ if($mode == "table.insert") {
     );
     $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
         "setwheres" => array(
-            array("and", array("gte", "last", $start_dt))
+            array("and", array("gte", "last", $start_dt)),
+            array("and", array("not", "disabled", 1))
         )
     ));
     $devices = exec_db_fetch_all($sql, $bind);
 
     foreach($devices as $device) {
-        //if(!empty($device_id) && $device_id != $device['id'])  continue;
-        if(!empty($device['disabled'])) continue;
-
+        if(!empty($device_id)) {
+            if($device_id != $device['id']) continue;
+        }
+        
         $bind = array(
             "device_id" => $device['id'],
             "start_dt" => $start_dt,
@@ -78,7 +80,9 @@ if($mode == "table.insert") {
             exec_db_query($sql, $bind);
         }
     }
-} elseif($mode == "make.excel") {
+}
+
+if($mode == "make.excel") {
     // check planner
     if(empty($planner)) {
         set_error("planner is required");
@@ -117,7 +121,8 @@ if($mode == "table.insert") {
         );
         $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
             "setwheres" => array(
-                array("and", array("gte", "last", $start_dt))
+                array("and", array("gte", "last", $start_dt)),
+                array("and". array("not", "disabled", 1))
             )
         ));
         $devices = exec_db_fetch_all($sql, $bind);
@@ -138,23 +143,22 @@ if($mode == "table.insert") {
         $summary_sheet->setCellValue("D3", $end_dt); // reported datetime
         $summary_sheet->setCellValue("D6", $client_category_name); // group name
         $summary_sheet->setCellValue("D7", count($devices)); // number of servers
-        $summary_sheet->setCellValue("D10", $start_dt . " ~ Now"); // time range
+        $summary_sheet->setCellValue("D10", $start_dt . " ~ Now"); // time range        
 
         $row_offset = 13;
         $col_offsets = range('A', 'M');
         $row_n = 0;
         foreach($devices as $device) {
             // except not matched device
-            if(!in_array($device['uuid'], $assetuuids)) continue;
-            if(!empty($device['disabled'])) continue;
+            if(!in_array($device['uuid'], $assetuuids)) {
+                    continue;
+            }
 
             // draw summary report
             $bind = array(
                 "device_id" => $device['id'],
                 "start_dt" => $start_dt,
-                "end_dt" => $end_dt,
-                "start_time" => "08:00:00",
-                "end_time" => "18:00:00"
+                "end_dt" => $end_dt
             );
             
             // SQL by planner
@@ -182,6 +186,8 @@ if($mode == "table.insert") {
                     
                 case "weekly":
                 case "monthly":
+                    $bind['start_time'] = "08:00:00";
+                    $bind['end_time'] = "18:00:00";
                     $sql = "
                         select
                             device_id,
@@ -293,9 +299,7 @@ if($mode == "table.insert") {
             $bind = array(
                 "device_id" => $device['id'],
                 "start_dt" => $start_dt,
-                "end_dt" => $end_dt,
-                "start_time" => "08:00:00",
-                "end_time" => "18:00:00"
+                "end_dt" => $end_dt
             );
 
             // SQL by planner
@@ -316,7 +320,7 @@ if($mode == "table.insert") {
                             max(disk_qty) as disk_qty,
                             round(max(disk_max_load), 2) as disk_max_load,
                             round(avg(disk_avg_load), 2) as disk_avg_load,
-                            floor(unix_timestamp(max(basetime)) / 15 * 60) as timekey
+                            floor(unix_timestamp(basetime) / 15 * 60) as timekey
                         from autoget_summaries
                         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
                         group by timekey order by basetime asc
@@ -325,6 +329,8 @@ if($mode == "table.insert") {
 
                 case "weekly":
                 case "monthly":
+                    $bind['start_time'] = "08:00:00";
+                    $bind['end_time'] = "18:00:00";
                     $sql = "
                         select
                             device_id,

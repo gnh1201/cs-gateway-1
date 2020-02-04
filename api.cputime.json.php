@@ -49,7 +49,7 @@ if($mode == "background") {
         $_core += get_int($row['core']);
     }
 
-/*
+    /*
     // if 0(zero) core, set average cores of all computers
     if(!($_core > 0)) {
         $sql = "select round(avg(core), 0) as core from autoget_data_cpucore";
@@ -58,7 +58,7 @@ if($mode == "background") {
             $_core += get_int($row['core']);
         }
     }
-*/
+    */
 
     // get cpu usage
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(

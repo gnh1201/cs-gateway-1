@@ -122,6 +122,9 @@ if(!array_key_empty("id", $device)) {
 }
 
 if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
+    // set delimiters
+    $delimiters = array(" ", "\t", "\",\"", "\"", "'", "\r\n", "\n", "(", ")", "\\");
+
     // get response from client
     $command_id = get_value_in_array("JOBSTAGE", $jobargs, "");
     $device_id = $device['id'];
@@ -138,7 +141,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     exec_db_query($sql, $bind);
     $response_id = get_db_last_id();
 
-    // update the last of device_id and command_id
+    // update the last of device_id/command_id
     $bind = array(
         "device_id" => $device_id,
         "command_id" => $command_id,
@@ -148,6 +151,94 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "setkeys" => array("device_id", "command_id")
     ));
     exec_db_query($sql, $bind);
+
+    // create new sheet table
+    $schemes = array(
+        "response_id" => array("bigint", 20),
+        "command_id" => array("int", 11),
+        "device_id" => array("int", 11),
+        "pos_y" => array("int", 5),
+        "pos_x" => array("int", 5),
+        "term_id" => array("bigint", 20),
+        "datetime" => array("datetime")
+    );
+    $sheet_tablename = exec_db_table_create($schemes, "autoget_sheets", array(
+        "suffix" => sprintf(".%s%s", date("YmdH"), sprintf("%02d", floor(date("i") / 10) * 10)),
+        "setindex" => array(
+            "index_1" => array("command_id", "device_id"),
+            "index_2" => array("pos_y", "datetime"),
+            "index_3" => array("pos_x", "datetime")
+        )
+    ));
+
+    // make sheet
+    $pos_y = 0;  // position y axis
+    $pos_x = 0;  // position x axis
+    $lines = split_by_line($response);
+    foreach($lines as $line) {
+        $pos_y++;
+        $pos_x = 0;
+        $terms = get_tokenized_text($line, $delimiters);
+        foreach($terms as $term) {
+            $pos_x++;
+
+            // check term is empty
+            if(empty($term)) continue;
+
+            // check term is exists
+            $bind = array(
+                "term" => $term
+            );
+            $sql = get_bind_to_sql_select("autoget_terms", $bind, array(
+                "getcount" => true
+            ));
+            $row = exec_db_fetch($sql, $bind);
+
+            // add new term
+            if($row['value'] == 0) {
+                $bind = array(
+                    "term" => $term,
+                    "count" => 0,
+                    "datetime" => $now_dt,
+                    "last" => $now_dt
+                );
+                $sql = get_bind_to_sql_insert("autoget_terms", $bind);
+                exec_db_query($sql, $bind);
+            }
+
+            // get term_id
+            $bind = array(
+                "term" => $term
+            );
+            $sql = get_bind_to_sql_select("autoget_terms", $bind);
+            $row = exec_db_fetch($sql, $bind);
+            $term_id = get_value_in_array("id", $row, 0);
+
+            // check term_id is not empty
+            if(!empty($term_id)) {
+                // term count up
+                $bind = array(
+                    "id" => $term_id,
+                    "last" => $now_dt
+                );
+                $sql = "update autoget_terms set count = count + 1, last = :last where id = :id";
+                exec_db_query($sql, $bind);
+
+                // add word to sheet
+                $bind = array(
+                    "response_id" => $response_id,
+                    "command_id" => $command_id,
+                    "device_id" => $device_id,
+                    "pos_y" => $pos_y,
+                    "pos_x" => $pos_x,
+                    "term_id" => $term_id,
+                    "datetime" => $now_dt
+                );
+                $sql = get_bind_to_sql_insert($sheet_tablename, $bind);
+                exec_db_query($sql, $bind);
+            }
+        }
+    }
 
     // last status up
     $bind = array(

@@ -1,5 +1,6 @@
 <?php
 loadHelper("string.utils");
+loadHelper("zabbix.api");
 
 $device_id = get_requested_value("device_id");
 $start_dt = get_requested_value("start_dt");
@@ -145,6 +146,109 @@ if($mode == "background") {
         exec_db_query($sql, $bind);
     }
     
+    $data['success'] = true;
+} elseif($mode == "background.zabbix") {
+    zabbix_authenticate();
+
+    $hostips = array();
+    
+    $bind = array(
+        "id" => $device_id
+    );
+    $sql = get_bind_to_sql_select("autoget_devices", $bind);
+    $devices = exec_db_fetch_all($sql, $bind);
+    foreach($devices as $device) {
+        $_hostips = array_filter(explode(",", $device['net_ip']));
+        $hostips = array_merge($hostips, $_hostips);
+    }
+
+    // get memory data from zabbix
+    $records = array();
+    $hosts = zabbix_get_hosts();
+    $itemnames = array();
+    foreach($hosts as $host) {
+        foreach($host->interfaces as $interface) {
+            if(in_array($interface->ip, $hostips)) {
+                $items = zabbix_get_items($host->hostid);
+                foreach($items as $item) {
+                    $itemname = strtolower($item->name);
+                    if(strpos($itemname, "disk") !== false && $item->status == "0") {
+                        $record = new stdClass();
+                        $record->itemid = $item->itemid;
+                        $record->clock = $item->lastclock;
+                        $record->value = $item->lastvalue;
+                        $records[] = $record;
+                        $itemnames[$item->itemid] = $item->name;
+                    }
+                }
+            }
+        }
+    }
+    
+    $tablename = exec_db_temp_create(array(
+        "itemid" => array("int", 11),
+        "itemname" => array("varchar", 255),
+        "clock" => array("int", 11),
+        "value" => array("float", "5,2")
+    ));
+
+    foreach($records as $record) {
+        $bind = array(
+            "itemid" => $record->itemid,
+            "itemname" => strtolower($itemnames[$record->itemid]),
+            "clock" => $record->clock,
+            "value" => $record->value
+        );
+        $sql = get_bind_to_sql_insert($tablename, $bind);
+        exec_db_query($sql, $bind);
+    }
+
+    $sql = "select itemid, itemname, avg(value) as value from $tablename group by itemid";
+    $_tbl1 = exec_db_temp_start($sql);
+
+    // create data table
+    $tablename = exec_db_table_create(array(
+        "device_id" => array("int", 11),
+        "name" => array("varchar", 255),
+        "total" => array("bigint", 20),
+        "available" => array("bigint", 20),
+        "used" => array("bigint", 20),
+        "load" => array("float", "5,2"),
+        "basetime" => array("datetime")
+    ), "autoget_data_disk", array(
+        "suffix" => ".zabbix",
+        "setindex" => array(
+            "index_1" => array("device_id", "datetime")
+        )
+    ));
+
+    $sql = "select
+        round(avg(if(itemname like 'total disk %', value, null)) * pow(1024, 3)) as total,
+        round(avg(if(itemname like 'free disk size %', value, null)) * pow(1024, 3)) as available,
+        round(avg(if(itemname like 'used disk %', value, null)) * pow(1024, 3)) as used,
+        substring_index(itemname, ' ', -1) as name,
+        itemname
+    from $_tbl1 group by name";
+    $rows = exec_db_fetch_all($sql);
+
+    // insert data
+    foreach($rows as $row) {
+        $terms = get_tokenized_text($row['itemname']);
+        if(in_array("used", $terms) || in_array("total", $terms) || in_array("free", $terms)) {
+            $bind = array(
+                "device_id" => $device_id,
+                "name" => $row['name'],
+                "total" => $row['total'],
+                "available" => $row['available'],
+                "used" => $row['used'],
+                "load" => ($row['used'] / $row['total']) * 100,
+                "basetime" => $now_dt
+            );
+            $sql = get_bind_to_sql_insert($tablename, $bind);
+            exec_db_query($sql, $bind);
+        }
+    }
+
     $data['success'] = true;
 } else {
     $bind = array(

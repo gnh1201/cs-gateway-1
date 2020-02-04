@@ -56,19 +56,21 @@ if($mode == "background") {
             "unique_1" => array("device_id")
         )
     ));
- 
-    foreach($rows as $row) {
-        $bind = array(
-            "device_id" => $row['device_id'],
-            "core" => get_int($row['core']),
-            "basetime" => $now_dt
-        );
-        $sql = get_bind_to_sql_insert($tablename, $bind, array(
-            "setkeys" => array("device_id")
-        ));
-        echo $sql;
 
-        exec_db_query($sql, $bind);
+    foreach($rows as $row) {
+        $core = get_int($row['core']);
+        if($core > 0) {
+            $bind = array(
+                "device_id" => $row['device_id'],
+                "core" => $core,
+                "basetime" => $now_dt
+            );
+            $sql = get_bind_to_sql_insert($tablename, $bind, array(
+                "setkeys" => array("device_id")
+            ));
+            echo $sql;
+            exec_db_query($sql, $bind);
+        }
     }
 
     $data['success'] = true;

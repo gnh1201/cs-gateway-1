@@ -23,7 +23,7 @@ if(empty($start_dt)) {
 
 $responses = array();
 
-$allow_actions = array("cpucore", "cputime", "cpu", "memtotal", "memtime", "mem", "disk", "hotfix", "portmap", "network", "report.data", "report.excel", "report.batch");
+$allow_actions = array("cpucore", "cputime", "cpu", "cpu.zabbix", "memtotal", "memtotal.zabbix", "memtime", "mem", "mem.zabbix", "disk", "disk.zabbix", "hotfix", "portmap", "network");
 
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
@@ -60,6 +60,15 @@ if(in_array($action, $allow_actions)) {
                     "mode" => "background"
                 ));
                 break;
+                
+            case "cpu.zabbix":
+                // get cpu usage
+                $responses[] = get_web_page(get_route_link("api.cpu.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background.zabbix"
+                ));
+                break;
 
             case "memtotal":
                 // get memory total
@@ -67,6 +76,15 @@ if(in_array($action, $allow_actions)) {
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
+                ));
+                break;
+
+            case "memtotal.zabbix":
+                // get memory total (zabbix)
+                $responses[] = get_web_page(get_route_link("api.memtotal.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background.zabbix"
                 ));
                 break;
 
@@ -88,6 +106,15 @@ if(in_array($action, $allow_actions)) {
                 ));
                 break;
                 
+            case "mem.zabbix":
+                // get cpu usage
+                $responses[] = get_web_page(get_route_link("api.mem.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background.zabbix"
+                ));
+                break;
+
             case "disk":
                 // get disk usage
                 $responses[] = get_web_page(get_route_link("api.disk.json"), "get", array(
@@ -96,7 +123,16 @@ if(in_array($action, $allow_actions)) {
                     "mode" => "background"
                 ));
                 break;
-                
+
+            case "disk.zabbix":
+                // get disk usage
+                $responses[] = get_web_page(get_route_link("api.disk.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background.zabbix"
+                ));
+                break;
+
             case "hotfix":
                 // get disk usage
                 $responses[] = get_web_page(get_route_link("api.hotfix.json"), "get", array(
@@ -162,6 +198,58 @@ if($action == "report.excel") {
         "mode" => "make.excel",
         "planner" => $planner
     ));
+}
+
+// simulation
+if($action == "report.batch") {
+    $s = array(range(1, 31), range(1, 3));
+    $d = array();
+    foreach($s as $k=>$v) {
+        foreach($v as $a) {
+            $d[] = sprintf("%04d-%02d-%02d", 2020, $k + 1, $a);
+        }
+    }
+    $w = array("2020-01-03", "2020-01-10", "2020-01-17", "2020-01-24", "2020-01-31");
+    $m = array("2020-01-31");
+    
+    // daily
+    foreach($d as $_d) {
+        $end_dt = $_d . " 18:00:00";
+        $adjust = "-10h";
+        $planner = "daily";
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+            "end_dt" => $end_dt,
+            "adjust" => $adjust,
+            "mode" => "make.excel",
+            "planner" => $planner
+        ));
+    }
+
+    // weekly
+    foreach($w as $_w) {
+        $end_dt = $_w. " 18:00:00";
+        $adjust = "-5d";
+        $planner = "weekly";
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+            "end_dt" => $end_dt,
+            "adjust" => $adjust,
+            "mode" => "make.excel",
+            "planner" => $planner
+        ));
+    }
+    
+    // monthly
+    foreach($m as $_m) {
+        $end_dt = $_m. " 18:00:00";
+        $adjust = "-30d";
+        $planner = "monthly";
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+            "end_dt" => $end_dt,
+            "adjust" => $adjust,
+            "mode" => "make.excel",
+            "planner" => $planner
+        ));
+    }
 }
 
 if($action == "flush_sheets") {
