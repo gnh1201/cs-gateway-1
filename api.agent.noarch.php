@@ -161,3 +161,4 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     ));
     exec_db_query($sql, $bind);
 }
+

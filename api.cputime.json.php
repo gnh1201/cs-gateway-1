@@ -131,8 +131,3 @@ if($mode == "background") {
 
 header("Content-Type: application/json");
 echo json_encode($data);
-
-exec_db_temp_end($_tbl3);
-exec_db_temp_end($_tbl2);
-exec_db_temp_end($_tbl1);
-

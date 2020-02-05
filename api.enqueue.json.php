@@ -1,6 +1,4 @@
 <?php
-loadHelper("string.utils");
-
 $data = array(
     "success" => false
 );

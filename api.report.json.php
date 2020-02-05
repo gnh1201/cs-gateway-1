@@ -57,7 +57,7 @@ if($mode == "table.insert") {
             "start_dt" => $start_dt,
             "end_dt" => $end_dt
         );
-        $sql = get_bind_to_sqlx("autoget_detail_report");        
+        $sql = get_bind_to_sqlx("autoget_detail_report");
         $rows = exec_db_fetch_all($sql, $bind);
         foreach($rows as $row) {
             // build values
@@ -142,8 +142,8 @@ if($mode == "make.excel") {
         $summary_sheet->setCellValue("A1", ucfirst($planner) . " Server Report"); // set title
         $summary_sheet->setCellValue("D3", $end_dt); // reported datetime
         $summary_sheet->setCellValue("D6", $client_category_name); // group name
-        $summary_sheet->setCellValue("D7", count($devices)); // number of servers
-        $summary_sheet->setCellValue("D10", $start_dt . " ~ Now"); // time range        
+        //$summary_sheet->setCellValue("D7", count($devices)); // number of servers
+        $summary_sheet->setCellValue("D10", $start_dt . " ~ Now"); // time range
 
         $row_offset = 13;
         $col_offsets = range('A', 'M');
@@ -216,6 +216,7 @@ if($mode == "make.excel") {
                 default:
                     continue;
             }
+            
             $rows = exec_db_fetch_all($sql, $bind);
             foreach($rows as $row) {
                 foreach($col_offsets as $col_offset) {
@@ -267,17 +268,20 @@ if($mode == "make.excel") {
 
                 // dive to next row
                 $row_n++;
-            }
-            
-            // limit 100 items
-            if($row_n > 99) {
-                break;
+                
+                // limit 100 items
+                if($row_n > 99) {
+                    break;
+                }
             }
         }
-        
+
+        // write number of servers
+        $summary_sheet->setCellValue("D7", $row_n); // number of servers
+
         // add summary sheet
         $spreadsheet->addSheet($summary_sheet);
-        write_common_log("summary sheet added", "api.report.json -> make.excel");
+        write_common_log("summary sheet added", "api.report.json->make.excel");
         
         // create detail sheet
         foreach($devices as $device) {
@@ -410,8 +414,97 @@ if($mode == "make.excel") {
 
                 // dive to next row
                 $row_n++;
+                
+                // limit 40 items
+                if($row_n > 39) {
+                    break;
+                }
             }
             
+            // draw CPU chart
+            $bind = array(
+                "data" => $rows,
+                "type" => "cpu"
+            );
+            $response = get_web_page(get_route_link("api.report.graph"), "jsondata", $bind);
+            $fw = write_storage_file($response['content'], array(
+                "extension" => "png"
+            ));
+            
+            // add CPU chart
+            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+            $drawing->setName("CPU");
+            $drawing->setDescription("CPU");
+            $drawing->setPath($fw); // put your path and image here
+            $drawing->setCoordinates("O11");
+            $drawing->setResizeProportional(false);
+            $drawing->setHeight(280);
+            $drawing->setWidth(600);
+            $drawing->setWorksheet($detail_sheet);
+            
+            // draw Memory chart
+            $bind = array(
+                "data" => $rows,
+                "type" => "mem"
+            );
+            $response = get_web_page(get_route_link("api.report.graph"), "jsondata", $bind);
+            $fw = write_storage_file($response['content'], array(
+                "extension" => "png"
+            ));
+
+            // add Memory chart
+            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+            $drawing->setName("Memory");
+            $drawing->setDescription("Memory");
+            $drawing->setPath($fw); // put your path and image here
+            $drawing->setCoordinates("O26");
+            $drawing->setResizeProportional(false);
+            $drawing->setHeight(280);
+            $drawing->setWidth(600);
+            $drawing->setWorksheet($detail_sheet);
+
+            // draw Network chart
+            $bind = array(
+                "data" => $rows,
+                "type" => "net"
+            );
+            $response = get_web_page(get_route_link("api.report.graph"), "jsondata", $bind);
+            $fw = write_storage_file($response['content'], array(
+                "extension" => "png"
+            ));
+
+            // add Network chart
+            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+            $drawing->setName("Disk");
+            $drawing->setDescription("Disk");
+            $drawing->setPath($fw); // put your path and image here
+            $drawing->setCoordinates("O41");
+            $drawing->setResizeProportional(false);
+            $drawing->setHeight(280);
+            $drawing->setWidth(600);
+            $drawing->setWorksheet($detail_sheet);
+            
+            // draw Disk chart
+            $bind = array(
+                "data" => $rows,
+                "type" => "disk"
+            );
+            $response = get_web_page(get_route_link("api.report.graph"), "jsondata", $bind);
+            $fw = write_storage_file($response['content'], array(
+                "extension" => "png"
+            ));
+
+            // add Disk chart
+            $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+            $drawing->setName("Disk");
+            $drawing->setDescription("Disk");
+            $drawing->setPath($fw); // put your path and image here
+            $drawing->setCoordinates("O57");
+            $drawing->setResizeProportional(false);
+            $drawing->setHeight(280);
+            $drawing->setWidth(600);
+            $drawing->setWorksheet($detail_sheet);
+
             // add detail sheet
             $spreadsheet->addSheet($detail_sheet);
             write_common_log("detail sheet added", "api.report.json -> make.excel");
@@ -425,13 +518,15 @@ if($mode == "make.excel") {
         write_common_log("removed template", "api.report.json -> make.excel");
         
         // save file
+        $filename = sprintf("%s-%s-group-%s", $planner, date("Ymd", strtotime($end_dt)), $client_category_id);
         $fw = write_storage_file("", array(
-            "extension" => "xlsx",
+            "filename" => $filename,
+            "extension" => "xls",
             "mode" => "fake"
         ));
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xls($spreadsheet);
         $writer->save($fw);
-        write_common_log("excel saved: " . $fw, "api.report.json -> make.excel");
+        write_common_log("excel saved: " . $fw, "api.report.json->make.excel");
         
         // add to report table
         $bind = array(

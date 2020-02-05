@@ -54,11 +54,11 @@ if($mode == "background") {
         foreach($host->interfaces as $interface) {
             $_hostids = explode(",", $hostids);
             $_hostips = explode(",", $hostips);
-            if(in_array($host->hostid, $hostids) || in_array($interface->ip, $_hostips)) {
+            if(in_array($host->hostid, $_hostids) || in_array($interface->ip, $_hostips)) {
                 $items = zabbix_get_items($host->hostid);
                 foreach($items as $item) {
                     if(strpos($item->key_, "net.") !== false && $item->status == "0") {
-                        $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
+                        $_records = zabbix_get_records($item->itemid, $end_dt, $adjust, $item->value_type);
                         $records = array_merge($records, $_records);
                     }
                 }
