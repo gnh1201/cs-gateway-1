@@ -225,7 +225,7 @@ if($mode == "background") {
     );
     $sql = "
         select ifnull(avg(`load`), 0.0) as `load`, max(`core`) as `core`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-            from autoget_data_cpu
+            from `autoget_data_cpu.zabbix`
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey
     ";

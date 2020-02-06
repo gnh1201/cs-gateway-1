@@ -92,8 +92,9 @@ switch($type) {
                 "adjust" => "-30d"
             ))
         );
-        $sql = "select clientid as client_id, count(if(type='text', 1, null)) as sent_text, count(if(type='voice', 1, null)) as sent_voice from twilio_messages where datetime >= :start_dt and datetime <= :end_dt group by clientid";
+        $sql = "select clientid as client_id, round(count(if(type='text', 1, null)) / 6) as sent_text, round(count(if(type='voice', 1, null)) / 6) as sent_voice from twilio_messages where datetime >= :start_dt and datetime <= :end_dt group by clientid";
         $rows = exec_db_fetch_all($sql, $bind);
+        $_rows = array();
         foreach($rows as $k=>$row) {
             $client_name = "";
             foreach($clients as $client) {
@@ -103,8 +104,12 @@ switch($type) {
                 }
             }
             $rows[$k]['client_name'] = $client_name;
+            
+            if(!empty($client_name)) {
+                $_rows[] = $rows[$k];
+            }
         }
-        $_data = $rows;
+        $_data = $_rows;
         break;
 
     case "panel3":
@@ -118,10 +123,10 @@ switch($type) {
         );
         $sql = "
             select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
-                select device_id,  max(`load`) as `load` from autoget_data_cpu
+                select device_id,  max(`load`) as `load` from `autoget_data_cpu.zabbix`
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
-            ) a, autoget_devices b where a.device_id = b.id order by `load` desc limit 10
+            ) a, autoget_devices b where a.device_id = b.id and `load` < 100 order by `load` desc limit 10
         ";
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['cpulasts'] = $rows;
@@ -136,11 +141,11 @@ switch($type) {
         );
         $sql = "
             select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
-                select device_id, max(`load`) as `load` from autoget_data_mem
+                select device_id, max(`load`) as `load` from `autoget_data_mem.zabbix`
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
-            ) a, autoget_devices b where a.device_id = b.id and `load` < 100 order by `load` desc limit 10
-        ";
+            ) a, autoget_devices b where a.device_id = b.id and `load` < 100 and b.computer_name not in ('LNCEHSDB', 'LSGSMS', 'LNCPNET') order by `load` desc limit 10
+        ";;
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['memlasts'] = $rows;
 

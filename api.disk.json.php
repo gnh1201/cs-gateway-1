@@ -8,6 +8,8 @@ $end_dt = get_requested_value("end_dt");
 $adjust = get_requested_value("adjust");
 $mode = get_requested_value("mode");
 
+$debug = get_requested_value("debug");
+
 $now_dt = get_current_datetime();
 
 if(empty($device_id)) {
@@ -189,7 +191,7 @@ if($mode == "background") {
         "itemid" => array("int", 11),
         "itemname" => array("varchar", 255),
         "clock" => array("int", 11),
-        "value" => array("float", "5,2")
+        "value" => array("float", "20,2")
     ));
 
     foreach($records as $record) {
@@ -205,6 +207,13 @@ if($mode == "background") {
 
     $sql = "select itemid, itemname, avg(value) as value from $tablename group by itemid";
     $_tbl1 = exec_db_temp_start($sql);
+    
+    if(!empty($debug)) {
+        $sql = "select * from $_tbl1";
+        $rows = exec_db_fetch_all($sql);
+        var_dump($rows);
+        exit;
+    }
 
     // create data table
     $tablename = exec_db_table_create(array(
@@ -223,7 +232,7 @@ if($mode == "background") {
     ));
 
     $sql = "select
-        round(avg(if(itemname like 'total disk %', value, null)) * pow(1024, 3)) as total,
+        round(avg(if(itemname like 'total disk %', value, null))) as total,
         round(avg(if(itemname like 'free disk size %', value, null)) * pow(1024, 3)) as available,
         round(avg(if(itemname like 'used disk %', value, null)) * pow(1024, 3)) as used,
         substring_index(itemname, ' ', -1) as name,
@@ -258,7 +267,7 @@ if($mode == "background") {
     );
     $sql = "
         select name, avg(total) as total, avg(available) as available, max(basetime) as basetime
-        from autoget_data_disk
+        from `autoget_data_disk.zabbix`
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by name
     ";
