@@ -127,7 +127,7 @@ $b3plot->SetColor("white");
 $b3plot->SetFillColor("#1111cc");
 */
 
-if(!empty($title)) {
+if(empty($title)) {
     $graph->title->Set($type);
 } else {
     $graph->title->Set($title);
