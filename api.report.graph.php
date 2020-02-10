@@ -49,7 +49,7 @@ foreach($data as $item) {
     if($plot == "line") {
         $glabels[] = substr($item->basetime, 11, 5);
     } elseif($plot == "bar") {
-        $_bind = array(
+        $_bind  = array(
             "id" => $item->device_id
         );
         $_sql = get_bind_to_sql_select("autoget_devices", $_bind);
@@ -61,7 +61,13 @@ foreach($data as $item) {
 }
 
 // Create the graph. These two calls are always required
-$graph = new Graph(640, 320, 'auto');
+$w = 640;
+$h = 320;
+if(count($gdata['max']) > 25) {
+	$w = $w * 2;
+	$h = $h * 2;
+}
+$graph = new Graph($w, $h, 'auto');
 if(in_array($type, array("cpu", "mem", "disk"))) {
     $graph->SetScale("textlin", 0, 100);
 } else {
@@ -111,7 +117,7 @@ if($plot == "bar") {
     $gbplot = new GroupBarPlot($gplots);
     // ...and add it to the graPH
     $graph->legend->SetPos(0.0,0.0,'right','top');
-    $graph->xaxis->SetFont(FF_DEFAULT, FS_NORMAL, 5);
+    //$graph->xaxis->SetFont(FF_DEFAULT, FS_NORMAL, 5);
     $graph->img->SetTransparent("white");
     $graph->Add($gbplot);
 }

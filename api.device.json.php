@@ -20,6 +20,7 @@ $rows = exec_db_fetch_all($sql, $bind);
 
 // modify values
 for($i = 0; $i < count($rows); $i++) {
+	/*
     $osnames = get_tokenized_text(strtolower($rows[$i]['os']), array(" ", "(", ")"));
     $arr_ip = explode(",", $rows[$i]['ip']);
     $arr_mac = explode(",", $rows[$i]['mac']);
@@ -28,6 +29,7 @@ for($i = 0; $i < count($rows); $i++) {
     } elseif(in_array("linux", $osnames)) {
         $rows[$i]['os'] = "Linux";
     }
+    */
     $rows[$i]['ip'] = current($arr_ip);
     $rows[$i]['mac'] = current($arr_mac);
 }

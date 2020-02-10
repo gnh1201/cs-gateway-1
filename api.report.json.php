@@ -134,6 +134,8 @@ if($mode == "make.excel") {
             "mode" => "fake"
         ));
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($fw);
+		//$reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader("Xls");
+		//$spreadsheet = $reader->load($fw);
 
         // create summary sheet
         $summary_sheet = clone $spreadsheet->getSheetByName("Template_Summary");
