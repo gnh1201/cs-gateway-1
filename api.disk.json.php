@@ -113,7 +113,7 @@ if($mode == "background") {
         $_tbl2 = exec_db_temp_start($sql, false);
 
         // step 2
-        $sql = "select name, (avg(total) * 1024) as total, (avg(available) * 1024) as available from $_tbl2 group by name";
+        $sql = "select name, (avg(total) * 1024) as total, avg(available) * 1024) as available from $_tbl2 group by name";
         $rows = exec_db_fetch_all($sql, false);
     }
 
@@ -233,8 +233,8 @@ if($mode == "background") {
 
     $sql = "select
         round(avg(if(itemname like 'total disk %', value, null))) as total,
-        round(avg(if(itemname like 'free disk size %', value, null)) * pow(1024, 3)) as available,
-        round(avg(if(itemname like 'used disk %', value, null)) * pow(1024, 3)) as used,
+        round(avg(if(itemname like 'free disk size %', value, null))) as pavailable,
+        round(avg(if(itemname like 'used disk %', value, null))) as pused,
         substring_index(itemname, ' ', -1) as name,
         itemname
     from $_tbl1 group by name";
@@ -244,13 +244,17 @@ if($mode == "background") {
     foreach($rows as $row) {
         $terms = get_tokenized_text($row['itemname']);
         if(in_array("used", $terms) || in_array("total", $terms) || in_array("free", $terms)) {
+            $available = $row['total'] * ($row['pavailable'] / 100);
+            $used = $row['total'] * ($row['pused'] / 100);
+            $load = ($used / $row['total']) * 100;
+
             $bind = array(
                 "device_id" => $device_id,
                 "name" => $row['name'],
                 "total" => $row['total'],
-                "available" => $row['available'],
-                "used" => $row['used'],
-                "load" => ($row['used'] / $row['total']) * 100,
+                "available" => $available,
+                "used" => $used,
+                "load" => $load,
                 "basetime" => $now_dt
             );
             $sql = get_bind_to_sql_insert($tablename, $bind);

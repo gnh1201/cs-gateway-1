@@ -23,7 +23,22 @@ if(empty($start_dt)) {
 
 $responses = array();
 
-$allow_actions = array("cpucore", "cputime", "cpu", "cpu.zabbix", "memtotal", "memtotal.zabbix", "memtime", "mem", "mem.zabbix", "disk", "disk.zabbix", "hotfix", "portmap", "network");
+$device_actions = array(
+	"cpucore",
+	"cputime",
+	"cpu",
+	"cpu.zabbix",
+	"memtotal",
+	"memtotal.zabbix",
+	"memtime",
+	"mem",
+	"mem.zabbix",
+	"disk",
+	"disk.zabbix",
+	"hotfix",
+	"portmap",
+	"network"
+);
 
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
@@ -31,7 +46,7 @@ $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
 ));
 $devices = exec_db_fetch_all($sql, $bind);
 
-if(in_array($action, $allow_actions)) {
+if(in_array($action, $device_actions)) {
     foreach($devices as $device) {
         switch($action) {
             case "cpucore":
@@ -300,6 +315,36 @@ if($action == "flush_tx_queue") {
     $responses[] = array(
         "success" => $result
     );
+}
+
+if($action == "grafana.status") {
+	$bind = false;
+	$sql = get_bind_to_sql_select("autoget_data_reverse", $bind, array(
+		"setwheres" => array(
+			array("and", array("like", "uri", "/api.zbx.status.json"))
+		)
+	));
+	$rows = exec_db_fetch_all($sql, $bind);
+	foreach($rows as $row) {
+		$_data = json_decode($row['text']);
+		$_url = get_route_link("api.zbx.status.json", array("_uri" => "/query", "mode" => "background"), false);
+		$responses[] = get_web_json($_url, "jsondata", $_data);
+	}
+}
+
+if($action == "grafana.top") {
+	$bind = false;
+	$sql = get_bind_to_sql_select("autoget_data_reverse", $bind, array(
+		"setwheres" => array(
+			array("and", array("like", "uri", "/api.zbx.top.json"))
+		)
+	));
+	$rows = exec_db_fetch_all($sql, $bind);
+	foreach($rows as $row) {
+		$_data = json_decode($row['text']);
+		$_url = get_route_link("api.zbx.top.json", array("_uri" => "/query", "mode" => "background"), false);
+		$responses[] = get_web_json($_url, "jsondata", $_data);
+	}
 }
 
 header("Content-Type: application/json");

@@ -3,6 +3,8 @@ loadHelper("json.format");
 loadHelper("zabbix.api");
 
 $uri = get_uri();
+$mode = get_requested_value("mode");
+
 $panel_hash = "";
 
 $_p = explode("/", $uri);
@@ -11,17 +13,31 @@ if(in_array("query", $_p)) {
     // get requested data
     $targets = get_requested_value("targets", array("_JSON"));
     $panel_id = get_requested_value("panelId", array("_JSON"));
-    $panel_hash = get_hashed_text(serialize(array("" => $panel_id, "targets" => $targets)));
+    $panel_hash = get_hashed_text(serialize(array("panel_id" => $panel_id, "targets" => $targets)));
+
+    // save requested data
+    $bind = array(
+		"name" => $panel_hash,
+		"text" => $requests['_RAW'],
+		"uri" => $uri,
+		"datetime" => get_current_datetime()
+    );
+    $sql = get_bind_to_sql_insert("autoget_data_reverse", $bind, array(
+		"setkeys" => array("name")
+    ));
+    exec_db_query($sql, $bind);
 
     // get saved data
-    $filename = $panel_hash;
-    $fr = read_storage_file($filename, array(
-        "storage_type" => "cache"
-    ));
-    if(!empty($fr)) {
-        echo $fr;
-        exit;
-    }
+    if($mode != "background") {
+		$filename = $panel_hash;
+		$fr = read_storage_file($filename, array(
+			"storage_type" => "cache"
+		));
+		if(!empty($fr)) {
+			echo $fr;
+			exit;
+		}
+	}
 
     // get hosts from zabbix server
     zabbix_authenticate();
