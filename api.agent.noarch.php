@@ -27,7 +27,7 @@ if(!array_key_empty("UUID", $jobargs)) {
 if(array_key_equals("JOBKEY", $jobargs, "init")) {
     if(array_key_empty("uuid", $device)) {
 		$platform = "General Operating System";
-		$osnames = get_tokenized_text($jobdata['OS']);
+		$osnames = get_tokenized_text(strtolower($jobdata['OS']));
 		if(in_array("windows", $osnames)) {
 			$platform = "Windows";
 		} elseif(in_array("linux", $osnames)) {
