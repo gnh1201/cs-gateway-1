@@ -8,6 +8,7 @@ $end_dt = get_requested_value("end_dt");
 $adjust = get_requested_value("adjust");
 $mode = get_requested_value("mode");
 
+$op = get_requested_value("op");
 $debug = get_requested_value("debug");
 
 $now_dt = get_current_datetime();
@@ -269,12 +270,23 @@ if($mode == "background") {
         "start_dt" => $start_dt,
         "end_dt" => $end_dt
     );
-    $sql = "
-        select name, avg(total) as total, avg(available) as available, max(basetime) as basetime
-        from `autoget_data_disk.zabbix`
-        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
-        group by name
-    ";
+    
+    // summary
+    if($op == "sum") {
+        $sql = "
+        select sum(total) as total, sum(available) as available, ((sum(used) / sum(total)) * 100) as `load`, max(basetime) as basetime
+            from `autoget_data_disk.zabbix`
+            where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+            group by device_id
+        ";
+    } else {
+        $sql = "
+       select name, avg(total) as total, avg(available) as available, max(basetime) as basetime
+            from `autoget_data_disk.zabbix`
+            where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+            group by name
+        ";
+    }
     $rows = exec_db_fetch_all($sql, $bind);
     
     $data['success'] = true;

@@ -26,6 +26,14 @@ if(!array_key_empty("UUID", $jobargs)) {
 // init
 if(array_key_equals("JOBKEY", $jobargs, "init")) {
     if(array_key_empty("uuid", $device)) {
+		$platform = "General Operating System";
+		$osnames = get_tokenized_text($jobdata['OS']);
+		if(in_array("windows", $osnames)) {
+			$platform = "Windows";
+		} elseif(in_array("linux", $osnames)) {
+			$platform = "Linux";
+		}
+		
         $bind = array(
             "uuid" => $jobdata['UUID'],
             "is_elevated" => $jobdata['IsElevated'],
@@ -36,6 +44,7 @@ if(array_key_equals("JOBKEY", $jobargs, "init")) {
             "cwd" => $jobdata['CWD'],
             "net_ip" => implode(",", split_by_line($jobdata['Net_IP'])),
             "net_mac" => implode(",", split_by_line($jobdata['Net_MAC'])),
+            "platform" => $platform,
             "datetime" => $now_dt,
             "last" => $now_dt
         );
