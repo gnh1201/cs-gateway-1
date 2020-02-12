@@ -4,7 +4,7 @@
  * @date 2019-04-15
  * @author Go Namhyeon <gnh1201@gmail.com>
  * @brief Twilio API controller (or domestic API)
-  */
+ */
 
 loadHelper("twilio.api"); // for voice, or international
 loadHelper("lguplus.api"); // for domestic
@@ -101,34 +101,40 @@ if(in_array("fuck", $terms) || in_array("bitch", $terms) || in_array("hell", $te
     $action = "denied";
 }
 
-// remove duplicate phone
+// remove duplicate numbers
 $_to_index = array();
 $_to_list = array();
-foreach($to_list as $arr_to) {
-    $_to_index_name = get_hashed_text($arr_to['intl']);
-    if(!in_array($_to_index_name, $_to_index)) {
-        $_to_list[] = $arr_to;
+foreach($to_list as $to_item) {
+    $_intl = $to_item['intl'];
+    if(substr($_intl, 0, 4) == "+820") {
+        $_intl = sprintf("+82%s", substr($_intl, 4));
     }
-    $_to_index[] = $to_index_name;
+    $to_item['intl'] = $_intl;
+
+    $_to_index_key = get_hashed_text($to_item['intl']);
+    if(!in_array($_to_index_key, $_to_index)) {
+        $_to_list[] = $to_item;
+    }
+    $_to_index[] = $to_index_key;
 }
 $to_list = $_to_list;
 
 // send message
 $responses = array();
-foreach($to_list as $arr_to) {
+foreach($to_list as $to_item) {
     switch($action) {
         case "text":
             foreach($messages as $message) {
                 if(!$is_domestic) {
-                    $responses[] = twilio_send_message($message, $arr_to['intl']);
+                    $responses[] = twilio_send_message($message, $to_item['intl']);
                 } else {
-                    $responses[] = lguplus_send_message($message, $arr_to['dmst']);
+                    $responses[] = lguplus_send_message($message, $to_item['dmst']);
                 }
             }
             break;
 
         case "voice":
-            $responses[] = twilio_send_voice($message, $arr_to['intl']);
+            $responses[] = twilio_send_voice($message, $to_item['intl']);
             break;
 
         case "denied":
@@ -144,7 +150,7 @@ foreach($to_list as $arr_to) {
     $bind = array(
         "type" => $action,
         "clientid" => $clientid,
-        "number_to" => $arr_to['intl'],
+        "number_to" => $to_item['intl'],
         "country" => $country,
         "message" => $message,
         "datetime" => get_current_datetime()
@@ -153,7 +159,7 @@ foreach($to_list as $arr_to) {
     exec_db_query($sql, $bind);
 
     // write history to log
-    write_debug_log(sprintf("action: %s, message: %s, to: %s", $action, $message, $arr_to['intl']), "api.twilio");
+    write_debug_log(sprintf("action: %s, message: %s, to: %s", $action, $message, $to_item['intl']), "api.twilio");
 }
 
 header("Content-Type: application/json");
