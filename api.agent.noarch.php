@@ -1,6 +1,7 @@
 <?php
 loadHelper("networktool");
 loadHelper("string.utils");
+loadHelper("webpagetool");
 loadHelper("colona.v1.format");
 
 $requests = get_requests();
@@ -12,6 +13,11 @@ $jobargs = decode_colona_format($requests['_RAW']);
 $jobdata = decode_colona_format(base64_decode(get_value_in_array("DATA", $jobargs)));
 
 $now_dt = get_current_datetime();
+
+// copy to test server
+if(APP_DEVELOPMENT == false) {
+    get_web_page("http://10.125.31.182/~gw/?route=api.agent.noarch", "rawdata.cmd", $requests['_RAW']);
+}
 
 // get device
 $device = array();
