@@ -318,6 +318,18 @@ if($action == "flush_tx_queue") {
 }
 
 if($action == "grafana.status") {
+	// change status (commit)
+	$bind = array(
+		"status" => 1
+	);
+	$sql = get_bind_to_sql_update("autoget_data_reverse_file", $bind, array(
+		"setwheres" => array(
+			array("and", array("eq", "status", 0))
+		)
+	));
+	exec_db_query($sql, $bind);
+	
+	// reload status
 	$bind = false;
 	$sql = get_bind_to_sql_select("autoget_data_reverse", $bind, array(
 		"setwheres" => array(
@@ -327,8 +339,11 @@ if($action == "grafana.status") {
 	$rows = exec_db_fetch_all($sql, $bind);
 	foreach($rows as $row) {
 		$_data = json_decode($row['text']);
-		$_url = get_route_link("api.zbx.status.json", array("_uri" => "/query", "mode" => "background"), false);
-		$responses[] = get_web_json($_url, "jsondata", $_data);
+		$_url = get_route_link("api.zbx.status.json", array(
+			"_uri" => $row['uri'],
+			"mode" => "background"
+		), false);
+		$responses[] = get_web_page($_url, "jsondata.async", $_data);
 	}
 }
 
