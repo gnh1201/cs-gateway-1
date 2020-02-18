@@ -49,45 +49,61 @@ if($mode == "background") {
         $_core += get_int($row['core']);
     }
 
-    /*
-    // if 0(zero) core, set average cores of all computers
-    if(!($_core > 0)) {
-        $sql = "select round(avg(core), 0) as core from autoget_data_cpucore";
-        $rows = exec_db_fetch_all($sql);
-        foreach($rows as $row) {
-            $_core += get_int($row['core']);
-        }
-    }
-    */
-
     // get cpu usage
-    $sql = get_bind_to_sql_select("autoget_sheets", false, array(
-        "setwheres" => array(
-            array("and", array("eq", "device_id", $device_id)),
-            array("and", array("in", "pos_y", array(2, 3))),
-            array("and", array("eq", "command_id", 47)),
-            array("and", array("lte", "datetime", $end_dt)),
-            array("and", array("gte", "datetime", $start_dt))
-        )
-    ));
-    $_tbl1 = exec_db_temp_start($sql);
+    if($device['platform'] == "windows") {
+        $sql = get_bind_to_sql_select("autoget_sheets", false, array(
+            "setwheres" => array(
+                array("and", array("eq", "device_id", $device_id)),
+                array("and", array("in", "pos_y", array(2, 3))),
+                array("and", array("eq", "command_id", 47)),
+                array("and", array("lte", "datetime", $end_dt)),
+                array("and", array("gte", "datetime", $start_dt))
+            )
+        ));
+        $_tbl1 = exec_db_temp_start($sql);
 
-    $sql = "
-    select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
-        from $_tbl1 a left join autoget_terms b on a.term_id = b.id
-            where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
-    ";
-    $_tbl2 = exec_db_temp_start($sql);
+        $sql = "
+        select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
+            from $_tbl1 a left join autoget_terms b on a.term_id = b.id
+                where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
+        ";
+        $_tbl2 = exec_db_temp_start($sql);
 
-    $sql = "select group_concat(if(pos_y = 2, term, null)) as name, avg(if(pos_y = 3, term, null)) as value, datetime from $_tbl2 group by pos_x, datetime";
-    $_tbl3 = exec_db_temp_start($sql, false);
+        $sql = "select group_concat(if(pos_y = 2, term, null)) as name, avg(if(pos_y = 3, term, null)) as value, datetime from $_tbl2 group by pos_x, datetime";
+        $_tbl3 = exec_db_temp_start($sql, false);
 
-    $delimiters = array(" ", "(", ")");
-    $stopwords = array("Idle", "_Total", "typeperf");
-    $stopwords = array_merge(get_tokenized_text($device['computer_name'], $delimiters), $stopwords);
+        $delimiters = array(" ", "(", ")");
+        $stopwords = array("Idle", "_Total", "typeperf");
+        $stopwords = array_merge(get_tokenized_text($device['computer_name'], $delimiters), $stopwords);
 
-    $sql = sprintf("select name, round(avg(value) / {$_core}, 2) as value from $_tbl3 where name not in ('%s') group by name", implode("', '", $stopwords));
-    $rows = exec_db_fetch_all($sql);
+        $sql = sprintf("select name, round(avg(value) / {$_core}, 2) as value, datetime from $_tbl3 where name not in ('%s') group by name", implode("', '", $stopwords));
+        $rows = exec_db_fetch_all($sql);
+    } elseif($device['platform'] == "linux") {
+        $sql = get_bind_to_sql_select("autoget_sheets", false, array(
+            "setwheres" => array(
+                array("and", array("eq", "device_id", $device_id)),
+                array("and", array("in", "pos_x", array(2, 3, 11))),
+                array("and", array("gt", "pos_y", 1)),
+                array("and", array("eq", "command_id", 3)),
+                array("and", array("lte", "datetime", $end_dt)),
+                array("and", array("gte", "datetime", $start_dt))
+            )
+        ));
+        $_tbl1 = exec_db_temp_start($sql);
+
+        $sql = "
+            select concat(c.name, '#', c.pid) as name, avg(c.value) as value, c.datetime as datetime from (
+                select
+                    ifnull(group_concat(if(a.pos_x = 11, b.term, null)), 'Unknown') as name,
+                    group_concat(if(a.pos_x = 3, b.term, null)) as value,
+                    group_concat(if(a.pos_x = 2, b.term, null)) as pid,
+                    a.datetime as datetime
+                from $_tbl1 a left join autoget_terms b on a.term_id = b.id
+                group by a.pos_y, a.datetime
+            ) c group by name
+        ";
+        $rows = exec_db_fetch_all($sql);
+    }
 
     // create table
     $tablename = exec_db_table_create(array(
@@ -106,7 +122,7 @@ if($mode == "background") {
             "device_id" => $device_id,
             "name" => $row['name'],
             "value" => $row['value'],
-            "basetime" => $end_dt,
+            "basetime" => $end_dt
         );
         //$sql = get_bind_to_sql_insert($tablename, $bind);
         //exec_db_query($sql, $bind);
