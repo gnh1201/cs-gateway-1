@@ -1,12 +1,18 @@
 <?php
 loadHelper("string.utils");
 
+$response_id = get_requested_value("response_id");
 $device_id = get_requested_value("device_id");
 $end_dt = get_requested_value("end_dt");
 $start_dt = get_requested_value("start_dt");
 $adjust = get_requested_value("adjust");
 
 $now_dt = get_current_datetime();
+
+if(empty($response_id)) {
+    set_error("response_id is required");
+    show_errors();
+}
 
 if(empty($adjust)) {
     $adjust = "-1m";
@@ -27,6 +33,7 @@ $data = array(
     "success" => false
 );
 
+/*
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_responses", $bind, array(
     "setwheres" => array(
@@ -40,13 +47,19 @@ $sql = get_bind_to_sql_select("autoget_responses", $bind, array(
         array("asc", "datetime")
     )
 ));
+*/
+
+$bind = array(
+    "id" => $response_id
+);
+$sql = get_bind_to_sql_select("autoget_responses", $bind);
 $responses = exec_db_fetch_all($sql, $bind);
 
 // set delimiters
 $delimiters = array(" ", "\t", "\",\"", "\"", "'", "\r\n", "\n", "(", ")", "\\");
 
-// set shemes
-$schemes = array(
+// set scheme
+$scheme = array(
     "response_id" => array("bigint", 20),
     "command_id" => array("int", 11),
     "device_id" => array("int", 11),
@@ -57,7 +70,7 @@ $schemes = array(
 );
 
 // set tablename
-$tablename = exec_db_table_create($schemes, "autoget_sheets", array(
+$tablename = exec_db_table_create($scheme, "autoget_sheets", array(
     "suffix" => sprintf(".%s%s", date("YmdH"), sprintf("%02d", floor(date("i") / 10) * 10)),
     "setindex" => array(
         "index_1" => array("command_id", "device_id"),
@@ -86,7 +99,7 @@ foreach($responses as $response) {
     $response_text = get_uncompressed_text($response['response']);
     
     // make sheets
-    $sheets = array(); // 
+    $sheets = array();
     $pos_y = 0;  // position y axis
     $pos_x = 0;  // position x axis
     $lines = split_by_line($response_text);
@@ -101,6 +114,9 @@ foreach($responses as $response) {
             }
         }
     }
+
+    // start bulk of sheets
+    $sheets_bulk_id = exec_db_bulk_start();
 
     // insert sheets
     foreach($sheets as $sheet) {
@@ -159,10 +175,15 @@ foreach($responses as $response) {
                 "term_id" => $term_id,
                 "datetime" => $now_dt
             );
-            $sql = get_bind_to_sql_insert($tablename, $bind);
-            exec_db_query($sql, $bind);
+            //$sql = get_bind_to_sql_insert($tablename, $bind);
+            //exec_db_query($sql, $bind);
+            exec_db_bulk_push($sheets_bulk_id, $bind);
         }
     }
+
+    // end bulk of sheets
+    $bindkeys = array("response_id", "device_id", "command_id", "pos_y", "pos_x", "term_id", "datetime");
+    exec_db_bulk_end($sheets_bulk_id, $tablename, $bindkeys);
 }
 
 $data['success'] = true;
