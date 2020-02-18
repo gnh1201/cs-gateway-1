@@ -2,6 +2,8 @@
 loadHelper("json.format");
 loadHelper("zabbix.api");
 
+$requests = get_requests();
+
 $uri = get_uri();
 $mode = get_requested_value("mode");
 $code = get_requested_value("code");
