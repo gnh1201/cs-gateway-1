@@ -91,7 +91,7 @@ foreach($devices as $device) {
     }
 }
 
-exec_db_bulk_end($bulkid, "autoget_tx_queue", array("device_id" "jobkey", "jobstage", "message", "created_on", "expired_on"));
+exec_db_bulk_end($bulkid, "autoget_tx_queue", array("device_id", "jobkey", "jobstage", "message", "created_on", "expired_on"));
 
 $data['success'] = true;
 

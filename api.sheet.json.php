@@ -1,4 +1,6 @@
 <?php
+set_max_execution_time(300); // limit 5 minutes
+
 loadHelper("string.utils");
 
 $response_id = get_requested_value("response_id");
@@ -11,7 +13,6 @@ $now_dt = get_current_datetime();
 
 if(empty($response_id)) {
     set_error("response_id is required");
-    show_errors();
 }
 
 if(empty($adjust)) {
