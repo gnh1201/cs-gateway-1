@@ -64,6 +64,7 @@ if(in_array("query", $_p)) {
         }
     }
 
+    $bulkid = exec_db_bulk_start();
     $hosts = zabbix_retrieve_hosts();
     foreach($hosts as $host) {
         $hostid = $host->hostid;
@@ -93,12 +94,15 @@ if(in_array("query", $_p)) {
                         "itemname" => $itemname,
                         "lastvalue" => $lastvalue
                     );
-                    $sql = get_bind_to_sql_insert($_tbl1, $bind);
-                    exec_db_query($sql, $bind);
+                    //$sql = get_bind_to_sql_insert($_tbl1, $bind);
+                    //exec_db_query($sql, $bind);
+                    exec_db_bulk_push($bulkid, $bind);
                 }
             }
         }
     }
+
+    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "itemname", "lastvalue"));
 
     //$sql = get_bind_to_sql_select($_tbl1);
     $sql = "select @num := @num + 1 as rank, hostname, lastvalue from $_tbl1, (select @num := 0) r order by lastvalue desc limit 100";
