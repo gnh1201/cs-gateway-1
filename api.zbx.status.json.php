@@ -76,7 +76,7 @@ if(in_array("query", $_p)) {
         //exec_db_query($sql, $bind);
         exec_db_bulk_push($bulkid, $bind);
     }
-    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "hostip));
+    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "hostip"));
 
     // get IPs by range
     $hostips = array();
