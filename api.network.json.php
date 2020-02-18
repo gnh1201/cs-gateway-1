@@ -72,15 +72,18 @@ if($mode == "background") {
         "value" => array("bigint", 20)
     ));
 
+    $bulkid = exec_db_bulk_start();
     foreach($records as $record) {
         $bind = array(
             "itemid" => $record->itemid,
             "clock" => $record->clock,
             "value" => $record->value
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("itemid", "clock", "value"));
 
     $sql = "
         select count(a.itemid) as qty, sum(a.value) as value, a.timekey as timekey, a.basetime as basetime from (
@@ -101,6 +104,7 @@ if($mode == "background") {
     ));
 
     // calculate delta
+    $bulkid = exec_db_bulk_start();
     $_rows = array();
     $_value = -1;
     foreach($rows as $row) {
@@ -119,10 +123,12 @@ if($mode == "background") {
                 "value" => $value,
                 "basetime" => $row['basetime']
             );
-            $sql = get_bind_to_sql_insert($tablename, $bind);
-            exec_db_query($sql, $bind);
+            //$sql = get_bind_to_sql_insert($tablename, $bind);
+            //exec_db_query($sql, $bind);
+            exec_db_bulk_push($bulkid, $bind);
         }
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "qty", "value", "basetime"));
 
     $data['success'] = true;
 } else {

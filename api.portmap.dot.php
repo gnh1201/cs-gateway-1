@@ -169,6 +169,8 @@ if($mode == "background") {
             "index_1" => array("device_id", "port", "basetime")
         )
     ));
+
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $bind = array(
             "device_id" => $device_id,
@@ -179,19 +181,15 @@ if($mode == "background") {
             "pid" => $row['pid'],
             "basetime" => $end_dt
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "process_name", "address", "port", "state", "pid", "basetime"));
 
     $data['success'] = true;
     header("Content-Type: application/json");
     echo json_encode($data);
-
-    exec_db_temp_end($_tbl4);
-    exec_db_temp_end($_tbl3);
-    exec_db_temp_end($_tbl2);
-    exec_db_temp_end($_tbl1);
-    exec_db_temp_end($_tbl0);
 } else {
     $bind = array(
         "device_id" => $device_id,

@@ -182,7 +182,7 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $bind = array(
         "response_id" => $response_id
     );
-    $response = get_web_page(get_route_link("api.sheet.json"), "get", $bind);
+    //$response = get_web_page(get_route_link("api.sheet.json"), "get", $bind);
     //$pid = get_int($response['content']);
 }
 

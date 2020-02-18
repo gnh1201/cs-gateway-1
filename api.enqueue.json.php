@@ -11,6 +11,8 @@ $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
 $devices = exec_db_fetch_all($sql, $bind);
 
+$bulkid = exec_db_bulk_start();
+
 foreach($devices as $device) {
     // set variable
     $device_os = strtolower($device['os']);
@@ -72,8 +74,9 @@ foreach($devices as $device) {
                 "adjust" => "10m"
             ))
         );
-        $__sql = get_bind_to_sql_insert("autoget_tx_queue", $__bind);
-        exec_db_query($__sql, $__bind);
+        //$__sql = get_bind_to_sql_insert("autoget_tx_queue", $__bind);
+        //exec_db_query($__sql, $__bind);
+        exec_db_bulk_push($bulkid, $__bind);
         
         // update to queue last
         $__bind = array(
@@ -87,6 +90,8 @@ foreach($devices as $device) {
         exec_db_query($__sql, $__bind);
     }
 }
+
+exec_db_bulk_end($bulkid, "autoget_tx_queue", array("device_id" "jobkey", "jobstage", "message", "created_on", "expired_on"));
 
 $data['success'] = true;
 

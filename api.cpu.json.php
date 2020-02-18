@@ -69,14 +69,14 @@ if($mode == "background") {
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
-    $_tbl1 = exec_db_temp_start($sql, false);
-    
+    $_tbl1 = exec_db_temp_start($sql);
+ 
     $sql = "
     select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
         from $_tbl1 a left join autoget_terms b on a.term_id = b.id
             where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
     ";
-    $_tbl2 = exec_db_temp_start($sql, false);
+    $_tbl2 = exec_db_temp_start($sql);
     
     $sql = "select group_concat(if(pos_y = 2, term, null)) as name, group_concat(if(pos_y = 3, term, null)) as value, datetime from $_tbl2 group by pos_x, datetime";
     $_tbl3 = exec_db_temp_start($sql, false);
@@ -117,6 +117,7 @@ if($mode == "background") {
     ));
 
     // insert selected rows
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $bind = array(
             "device_id" => $device_id,
@@ -124,9 +125,12 @@ if($mode == "background") {
             "core" => $_core,
             "basetime" => $row['basetime']
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "load", "core", "basetime"));
+    
 
     $data['success'] = true;
 } elseif($mode == "background.zabbix") {
@@ -178,15 +182,18 @@ if($mode == "background") {
         "value" => array("float", "5,2")
     ));
 
+    $bulkid = exec_db_bulk_start();
     foreach($records as $record) {
         $bind = array(
             "itemid" => $record->itemid,
             "clock" => $record->clock,
             "value" => $record->value
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("itemid", "clock", "value));
 
     $sql = "select itemid, (100 - avg(value)) as value, floor(clock / (5 * 60)) as timekey, max(from_unixtime(clock)) as basetime from $tablename group by itemid, timekey";
     $rows = exec_db_fetch_all($sql);
@@ -205,6 +212,7 @@ if($mode == "background") {
     ));
 
     // insert selected rows
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $bind = array(
             "device_id" => $device_id,
@@ -212,9 +220,11 @@ if($mode == "background") {
             "core" => $_core,
             "basetime" => $row['basetime']
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "load", "core", "basetime"));
 
     $data['success'] = true;
 } else {

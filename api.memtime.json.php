@@ -87,6 +87,7 @@ if($mode == "background") {
     ));
     
     // insert selected rows
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $bind = array(
             "device_id" => $device_id,
@@ -95,9 +96,11 @@ if($mode == "background") {
             "value" => $row['value'],
             "basetime" => $end_dt,
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulk, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "name", "_value", "value", "basetime"));
 
     $data['success'] = true;
 } else {

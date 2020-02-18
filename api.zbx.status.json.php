@@ -24,7 +24,7 @@ if(in_array("query", $_p)) {
         "datetime" => get_current_datetime()
     );
     $sql = get_bind_to_sql_insert("autoget_data_reverse", $bind, array(
-		"setkeys" => array("name")
+        "setkeys" => array("name")
     ));
     exec_db_query($sql, $bind);
 
@@ -60,6 +60,7 @@ if(in_array("query", $_p)) {
     $hosts = zabbix_retrieve_hosts();
 
     // make temporary database by hosts
+    $bulkid = exec_db_bulk_start();
     $_tbl1 = exec_db_temp_create(array(
         "hostid" => array("int", 11),
         "hostname" => array("varchar", 255),
@@ -71,9 +72,11 @@ if(in_array("query", $_p)) {
             "hostname" => $host->host,
             "hostip" => $host->interfaces[0]->ip
         );
-        $sql = get_bind_to_sql_insert($_tbl1, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($_tbl1, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "hostip));
 
     // get IPs by range
     $hostips = array();
@@ -148,6 +151,7 @@ if(in_array("query", $_p)) {
 
 /*
     // get problems
+    $bulkid = exec_db_bulk_start();
     $_tbl2 = exec_db_temp_create(array(
         "hostid" => array("int", 11),
         "eventid" => array("int", 11),
@@ -171,10 +175,12 @@ if(in_array("query", $_p)) {
                 "acknowledged" => $problem->acknowledged,
                 "debug" => json_encode($problem)
             );
-            $sql = get_bind_to_sql_insert($_tbl2, $bind);
-            exec_db_query($sql, $bind);
+            //$sql = get_bind_to_sql_insert($_tbl2, $bind);
+            //exec_db_query($sql, $bind);
+            exec_db_bulk_push($bulkid, $bind);
         }
     }
+    exec_db_bulk_end($bulkid, $_tbl2, array("hostid", "eventid", "hostname", "description", "severity", "suppressed", "acknowledged", "debug"));
 */
 
     // get triggers
@@ -190,6 +196,7 @@ if(in_array("query", $_p)) {
         $triggers = zabbix_get_triggers($row['hostid']);
         $alerts = zabbix_get_alerts($row['hostid']);
 
+        $bulkid = exec_db_bulk_start();
         foreach($triggers as $trigger) {
             $_timestamp = get_current_timestamp();
             foreach($alerts as $alert) {
@@ -207,9 +214,11 @@ if(in_array("query", $_p)) {
                 "timestamp" => date($config['timeformat'], intval($_timestamp)),
                 //"debug" => json_encode($trigger),
             );
-            $sql = get_bind_to_sql_insert($_tbl2, $bind);
-            exec_db_query($sql, $bind);
+            //$sql = get_bind_to_sql_insert($_tbl2, $bind);
+            //exec_db_query($sql, $bind);
+            exec_db_bulk_push($bulkid, $bind);
         }
+        exec_db_bulk_end($bulkid, $_tbl2, array("hostid", "hostname", "description", "severity", "timestamp"));
     }
 
     // if panel type is polystat
@@ -297,10 +306,10 @@ if(!empty($panel_hash)) {
 
     // add reverse file
     $bind = array(
-		"name" => $panel_hash,
-		"file" => $fw,
-		"status" => 0,
-		"datetime" => get_current_datetime()
+        "name" => $panel_hash,
+        "file" => $fw,
+        "status" => 0,
+        "datetime" => get_current_datetime()
     );
     $sql = get_bind_to_sql_insert("autoget_data_reverse_file", $bind);
     exec_db_query($sql, $bind);

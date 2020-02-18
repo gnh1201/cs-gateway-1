@@ -134,6 +134,7 @@ if($mode == "background") {
     ));
     
     // insert data
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $used = $row['total'] - $row['available'];
         $bind = array(
@@ -145,10 +146,12 @@ if($mode == "background") {
             "load" => ($used / $row['total']) * 100,
             "basetime" => $now_dt
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
-    
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "name", "total", "available", "used", "load", "basetime"));
+ 
     $data['success'] = true;
 } elseif($mode == "background.zabbix") {
     zabbix_authenticate();
@@ -195,6 +198,7 @@ if($mode == "background") {
         "value" => array("float", "20,2")
     ));
 
+    $bulkid = exec_db_bulk_start();
     foreach($records as $record) {
         $bind = array(
             "itemid" => $record->itemid,
@@ -202,9 +206,11 @@ if($mode == "background") {
             "clock" => $record->clock,
             "value" => $record->value
         );
-        $sql = get_bind_to_sql_insert($tablename, $bind);
-        exec_db_query($sql, $bind);
+        //$sql = get_bind_to_sql_insert($tablename, $bind);
+        //exec_db_query($sql, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
+    exec_db_bulk_end($bulkid, $tablename, array("itemid", "itemname", "clock", "value"));
 
     $sql = "select itemid, itemname, avg(value) as value from $tablename group by itemid";
     $_tbl1 = exec_db_temp_start($sql);
@@ -242,6 +248,7 @@ if($mode == "background") {
     $rows = exec_db_fetch_all($sql);
 
     // insert data
+    $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
         $terms = get_tokenized_text($row['itemname']);
         if(in_array("used", $terms) || in_array("total", $terms) || in_array("free", $terms)) {
@@ -258,10 +265,12 @@ if($mode == "background") {
                 "load" => $load,
                 "basetime" => $now_dt
             );
-            $sql = get_bind_to_sql_insert($tablename, $bind);
-            exec_db_query($sql, $bind);
+            //$sql = get_bind_to_sql_insert($tablename, $bind);
+            //exec_db_query($sql, $bind);
+            exec_db_bulk_push($bulkid, $bind);
         }
     }
+    exec_db_bulk_end($bulkid, $tablename, array("device_id", "name", "total", "available", "used", "load", "basetime"));
 
     $data['success'] = true;
 } else {
