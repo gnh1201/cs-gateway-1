@@ -193,7 +193,7 @@ if($mode == "background") {
         //exec_db_query($sql, $bind);
         exec_db_bulk_push($bulkid, $bind);
     }
-    exec_db_bulk_end($bulkid, $tablename, array("itemid", "clock", "value));
+    exec_db_bulk_end($bulkid, $tablename, array("itemid", "clock", "value"));
 
     $sql = "select itemid, (100 - avg(value)) as value, floor(clock / (5 * 60)) as timekey, max(from_unixtime(clock)) as basetime from $tablename group by itemid, timekey";
     $rows = exec_db_fetch_all($sql);
