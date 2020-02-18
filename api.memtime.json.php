@@ -38,15 +38,6 @@ if($mode == "background") {
         $_total = $row['total'];
     }
 
-    // if 0(zero) total, set average total of all computers
-    if(!($_core > 0)) {
-        $sql = "select round(avg(total), 0) as total from autoget_data_memtotal";
-        $rows = exec_db_fetch_all($sql);
-        foreach($rows as $row) {
-            $_total = $row['total'];
-        }
-    }
-
     // get memory usage by process (from tasklist)
     $sql = get_bind_to_sql_select("autoget_sheets", false, array(
         "setwheres" => array(
@@ -98,7 +89,7 @@ if($mode == "background") {
         );
         //$sql = get_bind_to_sql_insert($tablename, $bind);
         //exec_db_query($sql, $bind);
-        exec_db_bulk_push($bulk, $bind);
+        exec_db_bulk_push($bulkid, $bind);
     }
     exec_db_bulk_end($bulkid, $tablename, array("device_id", "name", "_value", "value", "basetime"));
 
