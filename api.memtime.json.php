@@ -26,45 +26,80 @@ if(empty($start_dt)) {
     ));
 }
 
+// get device
+$bind = array(
+    "id" => $device_id
+);
+$sql = get_bind_to_sql_select("autoget_devices", $bind);
+$device = exec_db_fetch($sql, $bind);
+
 if($mode == "background") {
     // get total of memory
     $_total = 0;
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_memtotal", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_memtotal.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_total = $row['total'];
     }
 
-    // get memory usage by process (from tasklist)
-    $sql = get_bind_to_sql_select("autoget_sheets", false, array(
-        "setwheres" => array(
-            array("and", array("eq", "command_id", 1)),
-            array("and", array("eq", "device_id", $device_id)),
-            array("and", array("gt", "pos_y", 3)),
-            array("and", array("in", "pos_x", array(1, 4))),
-            array("and", array("gte", "datetime", $start_dt)),
-            array("and", array("lte", "datetime", $end_dt))
-        )
-    ));
-    $_tbl2 = exec_db_temp_start($sql);
+    if($device['platform'] == "windows") {
+        // get memory usage by process (from tasklist)
+        $sql = get_bind_to_sql_select("autoget_sheets", false, array(
+            "setwheres" => array(
+                array("and", array("eq", "command_id", 1)),
+                array("and", array("eq", "device_id", $device_id)),
+                array("and", array("gt", "pos_y", 3)),
+                array("and", array("in", "pos_x", array(1, 4))),
+                array("and", array("gte", "datetime", $start_dt)),
+                array("and", array("lte", "datetime", $end_dt))
+            )
+        ));
+        $_tbl2 = exec_db_temp_start($sql);
 
-    $sql = "
-    select
-        group_concat(if(pos_x = 1, b.term, null)) as name,
-        max(if(pos_x = 4, replace(b.term, ',', ''), null)) as _value, 
-        round((max(if(pos_x = 4, replace(b.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
-        a.datetime as datetime
-    from $_tbl2 a left join autoget_terms b on a.term_id = b.id
-    group by a.pos_y, a.datetime
-    ";
-    $_tbl3 = exec_db_temp_start($sql);
+        $sql = "
+            select
+                group_concat(if(pos_x = 1, b.term, null)) as name,
+                max(if(pos_x = 4, replace(b.term, ',', ''), null)) as _value, 
+                round((max(if(pos_x = 4, replace(b.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
+                a.datetime as datetime
+            from $_tbl2 a left join autoget_terms b on a.term_id = b.id
+            group by a.pos_y, a.datetime
+        ";
+        $_tbl3 = exec_db_temp_start($sql);
 
-    //$sql = "select name, concat(avg(_value), 'KB') as _value, concat(avg(value), '%') as value from $_tbl3 group by name";
-    $sql = "select name, avg(_value) as _value, avg(value) as value from $_tbl3 where name not in ('typeperf') group by name";
-    $rows = exec_db_fetch_all($sql);
+        //$sql = "select name, concat(avg(_value), 'KB') as _value, concat(avg(value), '%') as value from $_tbl3 group by name";
+        $sql = "select name, avg(_value) as _value, avg(value) as value from $_tbl3 where name not in ('typeperf') group by name";
+        $rows = exec_db_fetch_all($sql);
+    } elseif($device['platform'] == "linux") {
+        // get memory usage by process (from tasklist)
+        $sql = get_bind_to_sql_select("autoget_sheets", false, array(
+            "setwheres" => array(
+                array("and", array("eq", "command_id", 3)),
+                array("and", array("eq", "device_id", $device_id)),
+                array("and", array("gt", "pos_y", 1)),
+                array("and", array("in", "pos_x", array(2, 4, 11))),
+                array("and", array("gte", "datetime", $start_dt)),
+                array("and", array("lte", "datetime", $end_dt))
+            )
+        ));
+        $_tbl2 = exec_db_temp_start($sql);
+
+        $sql = "
+            select concat(c.name, '#', c.pid) as name, avg(c.value) as value, ({$_total} * (avg(c.value) / 100)) as _value, c.datetime as datetime from (
+                select
+                    ifnull(group_concat(if(a.pos_x = 11, b.term, null)), 'Unknown') as name,
+                    group_concat(if(a.pos_x = 2, b.term, null)) as pid,
+                    group_concat(if(a.pos_x = 4, b.term, null)) as value,
+                    a.datetime as datetime
+                from $_tbl2 a left join autoget_terms b on a.term_id = b.id
+                group by a.pos_y, a.datetime
+            ) c group by name
+        ";
+        $rows = exec_db_fetch_all($sql);
+    }
     
     // create table
     $tablename = exec_db_table_create(array(

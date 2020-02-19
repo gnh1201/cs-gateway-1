@@ -357,8 +357,11 @@ if($action == "grafana.top") {
 	$rows = exec_db_fetch_all($sql, $bind);
 	foreach($rows as $row) {
 		$_data = json_decode($row['text']);
-		$_url = get_route_link("api.zbx.top.json", array("_uri" => "/query", "mode" => "background"), false);
-		$responses[] = get_web_json($_url, "jsondata", $_data);
+		$_url = get_route_link("api.zbx.top.json", array(
+			"_uri" => $row['uri'],
+			"mode" => "background"
+		), false);
+		$responses[] = get_web_page($_url, "jsondata.async", $_data);
 	}
 }
 

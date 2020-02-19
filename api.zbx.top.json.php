@@ -39,15 +39,30 @@ if(in_array("query", $_p)) {
 
     // get saved data
     if($mode != "background") {
-		$filename = $panel_hash;
-		$fr = read_storage_file($filename, array(
-			"storage_type" => "cache"
+		$bind = array(
+	        "name" => $panel_hash,
+	        "status" => 1
+		);
+		$sql = get_bind_to_sql_select("autoget_data_reverse_file", $bind, array(
+			"setorders" => array(
+				array("desc", "datetime")
+			),
+			"setlimit" => 1,
+			"setpage" => 1
 		));
-		if(!empty($fr)) {
-			echo $fr;
-			exit;
+		$rows = exec_db_fetch_all($sql, $bind);
+
+		foreach($rows as $row) {
+			$filename = $row['file'];
+			$fr = read_storage_file($filename, array(
+				"storage_type" => "cache"
+			));
+			if(!empty($fr)) {
+				echo $fr;
+				exit;
+			}
 		}
-	}
+    }
 
     foreach($targets as $target) {
         switch($target->target) {
@@ -129,10 +144,21 @@ header("Content-Type: application/json");
 $result = json_encode($_data);
 
 if(!empty($panel_hash)) {
+    // make panel cache
     $fw = write_storage_file($result, array(
         "storage_type" => "cache",
-        "filename" => $panel_hash
+        "basename" => true
     ));
+
+    // add reverse file
+    $bind = array(
+        "name" => $panel_hash,
+        "file" => $fw,
+        "status" => 0,
+        "datetime" => get_current_datetime()
+    );
+    $sql = get_bind_to_sql_insert("autoget_data_reverse_file", $bind);
+    exec_db_query($sql, $bind);
 }
 
 echo $result;

@@ -6,6 +6,8 @@
  * @brief Twilio API controller (or domestic API)
  */
 
+$config = get_config();
+
 loadHelper("twilio.api"); // for voice, or international
 loadHelper("lguplus.api"); // for domestic
 loadHelper("string.utils");

@@ -1,6 +1,4 @@
 <?php
-set_max_execution_time(300); // limit 5 minutes
-
 loadHelper("string.utils");
 
 $response_id = get_requested_value("response_id");

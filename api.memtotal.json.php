@@ -130,7 +130,9 @@ if($mode == "background") {
         $sql = get_bind_to_sql_insert($tablename, $bind, array(
             "setkeys" => array("device_id")
         ));
+        
         exec_db_query($sql, $bind);
+        $data['success'] = true;
     }
 } else {
     $bind = array(
