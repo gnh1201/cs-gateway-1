@@ -7,6 +7,8 @@ $end_dt = get_requested_value("end_dt");
 $start_dt = get_requested_value("start_dt");
 $adjust = get_requested_value("adjust");
 
+write_debug_log("PID: $mypid, response_id: $response_id", "api.sheets.json");
+
 $now_dt = get_current_datetime();
 
 if(empty($response_id)) {
@@ -106,6 +108,7 @@ foreach($responses as $response) {
         $pos_y++;
         $pos_x = 0;
         $terms = get_tokenized_text($line, $delimiters);
+        //write_debug_log(json_encode($terms));
         foreach($terms as $term) {
             $pos_x++;
             if(!empty($term)) {

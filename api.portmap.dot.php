@@ -51,110 +51,121 @@ foreach($rows as $row) {
 $device = current($devices);
 
 if($mode == "background") {
-    // 1: tasklist (command_id = 1)
-    // 2: netstat -anof | findstr -v 127.0.0.1 | findstr -v UDP (command_id = 2)
-    // 4: netstat -ntp | grep -v 127.0.0.1 | grep -v ::1 (command_id = 4)
-    $bind = false;
-    $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
-        "setwheres" => array(
-            array("and", array(
-                array("or", array(
-                    array("and", array("eq", "command_id", 1)),
-                    array("and", array("in", "pos_x", array(1, 2))),
-                    array("and", array("gt", "pos_y", 3))
-                )),
-                array("or", array(
-                    array("and", array("eq", "command_id", 2)),
-                    array("and", array("in", "pos_x", array(2, 4, 5))),
-                    array("and", array("gt", "pos_y", 4))
-                )),
-                array("or", array(
-                    array("and", array("eq", "command_id", 4)),
-                    array("and", array("in", "pos_x", array(4, 6, 7))),
-                    array("and", array("gt", "pos_y", 2))
-                ))
-            )),
-            array("and", array("gte", "datetime", $start_dt)),
-            array("and", array("lte", "datetime", $end_dt)),
-            array("and", array("eq", "device_id", $device_id))
-        )
-    ));
-    $_tbl0 = exec_db_temp_start($sql);
+    $tablename = "";
 
-    // tasklist (windows)
-    $sql = "
-    select
-        group_concat(if(pos_x = 1, b.term, null)) as process_name,
-        group_concat(if(pos_x = 2, b.term, null)) as pid
-    from $_tbl0 a left join autoget_terms b on a.term_id = b.id
-    where a.command_id = 1
-    group by a.pos_y, a.datetime
-    ";
-    $_tbl1 = exec_db_temp_start($sql);
-
-    // netstat (windows)
-    $sql = "
-    select
-        left(a.address, length(a.address) - length(a.port) - 1) as address,
-        a.port as port,
-        a.state as state,
-        a.pid as pid
-    from (
-        select
-            group_concat(if(a.pos_x = 2, b.term, null)) as address,
-            substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
-            group_concat(if(a.pos_x = 4, b.term, null)) as state,
-            group_concat(if(a.pos_x = 5, b.term, null)) as pid
-        from $_tbl0 a left join autoget_terms b on a.term_id = b.id
-        where a.command_id = 2
-        group by a.pos_y, a.datetime
-    ) a
-    ";
-    $_tbl2 = exec_db_temp_start($sql);
-
-    // netstat (linux)
-    $sql = "
-    select
-        left(a.address, length(a.address) - length(a.port) - 1) as address,
-        a.port as port,
-        a.state as state,
-        a.pid as pid,
-        a.process_name as process_name
-    from (
-        select
-            group_concat(if(a.pos_x = 2, b.term, null)) as address,
-            substring_index(group_concat(if(a.pos_x = 4, b.term, null)), ':', -1) as port,
-            group_concat(if(a.pos_x = 6, b.term, null)) as state,
-            substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', 1) as pid,
-            substring_index(group_concat(if(a.pos_x = 7, b.term, null)), '/', -1) as process_name
-        from $_tbl0 a left join autoget_terms b on a.term_id = b.id
-        where command_id = 4
-        group by a.pos_y, a.datetime
-    ) a
-    ";
-    $_tbl3 = exec_db_temp_start($sql);
-
-    // step 1
-    $_tbl4 = false;
     if($device['platform'] == "windows") {
-        $sql = "
-        select
-            b.process_name as process_name,
-            a.address as address,
-            a.port as port,
-            a.state as state,
-            a.pid as pid
-        from `$_tbl2` a left join `$_tbl1` b on a.pid = b.pid";
-    } elseif($device['platform'] == "linux")  {
-        $sql = "select process_name, address, port, state, pid from `$_tbl3`";
-    }
-    $_tbl4 = exec_db_temp_start($sql);
+        // 1: tasklist (command_id = 1)
+        // 2: netstat -anof | findstr -v 127.0.0.1 | findstr -v UDP (command_id = 2)
+        $bind = false;
+        $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
+            "setwheres" => array(
+                array("and", array(
+                    array("or", array(
+                        array("and", array("eq", "command_id", 1)),
+                        array("and", array("in", "pos_x", array(1, 2))),
+                        array("and", array("gt", "pos_y", 3))
+                    )),
+                    array("or", array(
+                        array("and", array("eq", "command_id", 2)),
+                        array("and", array("in", "pos_x", array(2, 4, 5))),
+                        array("and", array("gt", "pos_y", 4))
+                    )),
+                )),
+                array("and", array("gte", "datetime", $start_dt)),
+                array("and", array("lte", "datetime", $end_dt)),
+                array("and", array("eq", "device_id", $device_id))
+            )
+        ));
+        $_tbl0 = exec_db_temp_start($sql);
 
-    // step 2
-    $sql = "select * from $_tbl4 group by port";
-    //$_tbl5 = exec_db_temp_start($sql)
+        // tasklist (windows)
+        $sql = "
+            select
+                group_concat(if(pos_x = 1, b.term, null)) as process_name,
+                group_concat(if(pos_x = 2, b.term, null)) as pid
+            from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+            where a.command_id = 1
+            group by a.pos_y, a.datetime
+        ";
+        $_tbl1 = exec_db_temp_start($sql);
+        
+        // netstat (windows, TCP only)
+        $sql = "
+            select
+                left(a.address, length(a.address) - length(a.port) - 1) as address,
+                a.port as port,
+                a.state as state,
+                a.pid as pid
+            from (
+                select
+                    group_concat(if(a.pos_x = 2, b.term, null)) as address,
+                    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
+                    group_concat(if(a.pos_x = 4, b.term, null)) as state,
+                    group_concat(if(a.pos_x = 5, b.term, null)) as pid
+                from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                where a.command_id = 2
+                group by a.pos_y, a.datetime
+            ) a
+        ";
+        $_tbl2 = exec_db_temp_start($sql);
+
+        // join tasklist and netstat (windows)
+        $sql = "
+            select
+                b.process_name as process_name,
+                a.address as address,
+                a.port as port,
+                a.state as state,
+                a.pid as pid
+            from `$_tbl2` a left join `$_tbl1` b on a.pid = b.pid
+        ";
+        $_tbl3 = exec_db_temp_start($sql);
+        $tablename = $_tbl3;
+    } elseif($device['platform'] == "linux") {
+        // 4: netstat -ntp | grep -v 127.0.0.1 | grep -v ::1 (command_id = 4)
+        $bind = false;
+        $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
+            "setwheres" => array(
+                array("and", array("eq", "command_id", 4)),
+                //array("and", array("in", "pos_x", array(4, 6, 7))),
+                array("and", array("gt", "pos_y", 2)),
+                array("and", array("gte", "datetime", $start_dt)),
+                array("and", array("lte", "datetime", $end_dt)),
+                array("and", array("eq", "device_id", $device_id))
+            )
+        ));
+        $_tbl0 = exec_db_temp_start($sql);
+
+        // netstat (linux)
+        $sql = "
+            select
+                left(a.address, length(a.address) - length(a.port) - 1) as address,
+                a.port as port,
+                a.state as state,
+                a.pid as pid,
+                a.process_name as process_name
+            from (
+                select
+                    group_concat(if(a.pos_x = 2, b.term, null)) as address,
+                    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
+                    group_concat(if(a.pos_x = 4, b.term, null)) as state,
+                    substring_index(group_concat(if(a.pos_x = 5, b.term, null)), '/', 1) as pid,
+                    substring_index(group_concat(if(a.pos_x = 5, b.term, null)), '/', -1) as process_name
+                from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                where command_id = 4
+                group by a.pos_y, a.datetime
+            ) a
+        ";
+        $_tbl1 = exec_db_temp_start($sql);
+        $tablename = $_tbl1;
+    }
+
+    // group by port
+    $sql = "select * from $tablename group by port";
     $rows = exec_db_fetch_all($sql);
     
+    var_dump($rows);
+
     // create table
     $tablename = exec_db_table_create(array(
         "device_id" => array("int", 11),
