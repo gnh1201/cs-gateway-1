@@ -365,6 +365,12 @@ if($action == "grafana.top") {
 	}
 }
 
+if($action == "zabbix.hosts") {
+    $responses[] = get_web_page(get_route_link("api.hosts.json"), "get.async", array(
+        "mode" => "background.zabbix"
+    ));
+}
+
 header("Content-Type: application/json");
 $data = array(
     "data" => $responses
