@@ -1,5 +1,6 @@
 <?php
 loadHelper("webpagetool");
+loadHelper("perftool");
 
 $action = get_requested_value("action");
 $adjust = get_requested_value("adjust");
@@ -20,6 +21,9 @@ if(empty($start_dt)) {
         "adjust" => $adjust
     ));
 }
+
+// wait a few seconds if cpu idle 20% or below
+set_min_cpu_idle(0.2);
 
 $responses = array();
 
@@ -365,10 +369,8 @@ if($action == "grafana.top") {
 	}
 }
 
-if($action == "zabbix.hosts") {
-    $responses[] = get_web_page(get_route_link("api.hosts.json"), "get.async", array(
-        "mode" => "background.zabbix"
-    ));
+if($action == "hosts") {
+    $responses[] = get_web_page(get_route_link("api.hosts.json"), "get.async");
 }
 
 header("Content-Type: application/json");

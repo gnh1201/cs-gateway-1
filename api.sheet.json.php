@@ -1,5 +1,6 @@
 <?php
 loadHelper("string.utils");
+loadHelper("perftool");
 
 $response_id = get_requested_value("response_id");
 $device_id = get_requested_value("device_id");
@@ -8,6 +9,9 @@ $start_dt = get_requested_value("start_dt");
 $adjust = get_requested_value("adjust");
 
 write_debug_log("PID: $mypid, response_id: $response_id", "api.sheets.json");
+
+// wait a few seconds if cpu idle 20% or below
+set_min_cpu_idle(0.2);
 
 $now_dt = get_current_datetime();
 
