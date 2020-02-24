@@ -22,8 +22,8 @@ if(empty($start_dt)) {
     ));
 }
 
-// wait a few seconds if cpu idle 20% or below
-set_min_cpu_idle(0.2);
+// wait a few seconds if cpu idle 25% or below
+//set_min_cpu_idle(0.25);
 
 $responses = array();
 

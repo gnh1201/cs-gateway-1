@@ -10,9 +10,6 @@ $adjust = get_requested_value("adjust");
 
 write_debug_log("PID: $mypid, response_id: $response_id", "api.sheets.json");
 
-// wait a few seconds if cpu idle 20% or below
-set_min_cpu_idle(0.2);
-
 $now_dt = get_current_datetime();
 
 if(empty($response_id)) {
@@ -33,6 +30,12 @@ if(empty($start_dt)) {
         "adjust" => $adjust
     ));
 }
+
+// set cpu usage limit to this process (50%)
+set_cpu_usage_limit(0.5);
+
+// wait a few seconds if minimum cpu idle or below (20%)
+//set_min_cpu_idle(0.2);
 
 $data = array(
     "success" => false

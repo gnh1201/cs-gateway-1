@@ -63,7 +63,7 @@ if(array_key_equals("JOBKEY", $jobargs, "init")) {
             "setkeys" => array("uuid"),
             "setfixeds" => array("datetime")
         ));
-        write_debug_log(get_db_binded_sql($sql, $bind));
+        //write_debug_log(get_db_binded_sql($sql, $bind));
         exec_db_query($sql, $bind);
     }
 }
