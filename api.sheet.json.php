@@ -14,6 +14,7 @@ $now_dt = get_current_datetime();
 
 if(empty($response_id)) {
     set_error("response_id is required");
+    show_errors();
 }
 
 if(empty($adjust)) {
@@ -31,8 +32,8 @@ if(empty($start_dt)) {
     ));
 }
 
-// set cpu usage limit to this process (50%)
-set_cpu_usage_limit(0.5);
+// set cpu usage limit to this process (20%)
+set_cpu_usage_limit(0.2);
 
 // wait a few seconds if minimum cpu idle or below (20%)
 //set_min_cpu_idle(0.2);
