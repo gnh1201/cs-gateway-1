@@ -135,25 +135,19 @@ if($mode == "background") {
     $data['success'] = true;
 } elseif($mode == "background.zabbix") {
     zabbix_authenticate();
-    
-    $hostips = array();
-    
+  
     $bind = array(
         "id" => $device_id
     );
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
-    $devices = exec_db_fetch_all($sql, $bind);
-    foreach($devices as $device) {
-        $_hostips = array_filter(explode(",", $device['net_ip']));
-        $hostips = array_merge($hostips, $_hostips);
-    }
+    $device = exec_db_fetch($sql, $bind);
 
     // get number of cores
     $_core = 0;
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_cpucore.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_core += get_int($row['core']);
@@ -161,17 +155,12 @@ if($mode == "background") {
 
     // get cpu data from zabbix
     $records = array();
-    $hosts = zabbix_get_hosts();
-    foreach($hosts as $host) {
-        foreach($host->interfaces as $interface) {
-            if(in_array($interface->ip, $hostips)) {
-                $items = zabbix_get_items($host->hostid);
-                foreach($items as $item) {
-                    if($item->name == "CPU Usage" && $item->status == "0") {
-                        $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
-                        $records = array_merge($records, $_records);
-                    }
-                }
+    if(!array_key_empty("zabbix_hostid", $device)) {
+        $items = zabbix_get_items($device['zabbix_hostid']);
+        foreach($items as $item) {
+            if($item->name == "CPU Usage" && $item->status == "0") {
+                $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
+                $records = array_merge($records, $_records);
             }
         }
     }

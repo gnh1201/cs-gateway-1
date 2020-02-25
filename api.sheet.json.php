@@ -1,5 +1,6 @@
 <?php
 loadHelper("string.utils");
+loadHelper("perftool");
 
 $response_id = get_requested_value("response_id");
 $device_id = get_requested_value("device_id");
@@ -13,6 +14,7 @@ $now_dt = get_current_datetime();
 
 if(empty($response_id)) {
     set_error("response_id is required");
+    show_errors();
 }
 
 if(empty($adjust)) {
@@ -29,6 +31,15 @@ if(empty($start_dt)) {
         "adjust" => $adjust
     ));
 }
+
+// set cpu usage limit to this process (20%)
+//set_cpu_usage_limit(0.2);
+
+// set time limit (10 minutes)
+set_max_execution_time(600);
+
+// wait a few seconds if minimum cpu idle or below (30%)
+set_min_cpu_idle(0.3);
 
 $data = array(
     "success" => false

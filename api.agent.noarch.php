@@ -7,7 +7,7 @@ loadHelper("colona.v1.format");
 $requests = get_requests();
 
 $ne = get_network_event();
-$ua = $ne['agent'] . DOC_EOL;
+$ua = $ne['agent'];
 
 $jobargs = decode_colona_format($requests['_RAW']);
 $jobdata = decode_colona_format(base64_decode(get_value_in_array("DATA", $jobargs)));
@@ -16,7 +16,7 @@ $now_dt = get_current_datetime();
 
 // copy to test server
 if(APP_DEVELOPMENT == false) {
-    get_web_page("http://10.125.31.182/~gw/?route=api.agent.noarch", "rawdata.cmd", $requests['_RAW']);
+    //get_web_page("http://10.125.31.182/~gw/?route=api.agent.noarch", "rawdata.async", $requests['_RAW']);
 }
 
 // get device
@@ -31,30 +31,40 @@ if(!array_key_empty("UUID", $jobargs)) {
 
 // init
 if(array_key_equals("JOBKEY", $jobargs, "init")) {
-    if(array_key_empty("uuid", $device)) {
-		$platform = "General";
-		$osnames = get_tokenized_text(strtolower($jobdata['OS']));
-		if(in_array("windows", $osnames)) {
-			$platform = "Windows";
-		} elseif(in_array("linux", $osnames)) {
-			$platform = "Linux";
-		}
-		
+    if(!array_key_empty("UUID", $jobargs)) {
+        $platform = "general";
+        $osnames = get_tokenized_text(strtolower($jobdata['OS']));
+        if(in_array("windows", $osnames)) {
+            $platform = "windows";
+        } elseif(in_array("linux", $osnames)) {
+            $platform = "linux";
+        }
+
+        // get IP/MAC addresses
+        $network_ip_list = explode_by_line($jobdata['Net_IP']);
+        $network_mac_list = explode_by_line($jobdata['Net_MAC']);
+
+        // add device infomration
         $bind = array(
-            "uuid" => $jobdata['UUID'],
-            "is_elevated" => $jobdata['IsElevated'],
+            "uuid" => $jobargs['UUID'],
+            "is_elevated" => intval($jobdata['IsElevated']),
             "uri" => $jobdata['URI'],
-            "computer_name" => $jobdata['ComputerName'],
+            "computer_name" => get_value_in_array("ComputerName", $jobdata, "Unknown"),
             "os" => $jobdata['OS'],
             "arch" => $jobdata['Arch'],
             "cwd" => $jobdata['CWD'],
-            "net_ip" => implode(",", split_by_line($jobdata['Net_IP'])),
-            "net_mac" => implode(",", split_by_line($jobdata['Net_MAC'])),
+            "net_ip" => implode(",", $network_ip_list),
+            "net_mac" => implode(",", $network_mac_list),
+            "version" => $ua,
             "platform" => $platform,
             "datetime" => $now_dt,
             "last" => $now_dt
         );
-        $sql = get_bind_to_sql_insert("autoget_devices", $bind);
+        $sql = get_bind_to_sql_insert("autoget_devices", $bind, array(
+            "setkeys" => array("uuid"),
+            "setfixeds" => array("datetime")
+        ));
+        //write_debug_log(get_db_binded_sql($sql, $bind));
         exec_db_query($sql, $bind);
     }
 }
@@ -150,6 +160,11 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "datetime" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_responses", $bind);
+
+    //if($command_id = 53) {
+    //    write_debug_log(get_db_binded_sql($sql, $bind));
+    //}
+
     exec_db_query($sql, $bind);
     $response_id = get_db_last_id();
 

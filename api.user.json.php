@@ -176,7 +176,7 @@ if($mode == "background") {
                 "type" => $credential_type,
                 "username" => $row['username']
             );
-            itsm_put_data("credentials", $bind);
+            itsm_add_data("credentials", $bind);
         }
     }
 

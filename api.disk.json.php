@@ -162,31 +162,22 @@ if($mode == "background") {
         "id" => $device_id
     );
     $sql = get_bind_to_sql_select("autoget_devices", $bind);
-    $devices = exec_db_fetch_all($sql, $bind);
-    foreach($devices as $device) {
-        $_hostips = array_filter(explode(",", $device['net_ip']));
-        $hostips = array_merge($hostips, $_hostips);
-    }
+    $device = exec_db_fetch($sql, $bind);
 
-    // get memory data from zabbix
-    $records = array();
-    $hosts = zabbix_get_hosts();
+    // get disk data from zabbix
     $itemnames = array();
-    foreach($hosts as $host) {
-        foreach($host->interfaces as $interface) {
-            if(in_array($interface->ip, $hostips)) {
-                $items = zabbix_get_items($host->hostid);
-                foreach($items as $item) {
-                    $itemname = strtolower($item->name);
-                    if(strpos($itemname, "disk") !== false && $item->status == "0") {
-                        $record = new stdClass();
-                        $record->itemid = $item->itemid;
-                        $record->clock = $item->lastclock;
-                        $record->value = $item->lastvalue;
-                        $records[] = $record;
-                        $itemnames[$item->itemid] = $item->name;
-                    }
-                }
+    $records = array();
+    if(!array_key_empty("zabbix_hostid", $device)) {
+        $items = zabbix_get_items($device['zabbix_hostid']);
+        foreach($items as $item) {
+            $itemname = strtolower($item->name);
+            if(strpos($itemname, "disk") !== false && $item->status == "0") {
+                $record = new stdClass();
+                $record->itemid = $item->itemid;
+                $record->clock = $item->lastclock;
+                $record->value = $item->lastvalue;
+                $records[] = $record;
+                $itemnames[$item->itemid] = $item->name;
             }
         }
     }
