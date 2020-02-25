@@ -159,6 +159,11 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "datetime" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_responses", $bind);
+
+    //if($command_id = 53) {
+    //    write_debug_log(get_db_binded_sql($sql, $bind));
+    //}
+
     exec_db_query($sql, $bind);
     $response_id = get_db_last_id();
 

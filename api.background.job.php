@@ -29,6 +29,7 @@ $responses = array();
 
 $device_actions = array(
 	"cpucore",
+    "cpucore.zabbix",
 	"cputime",
 	"cpu",
 	"cpu.zabbix",
@@ -59,6 +60,15 @@ if(in_array($action, $device_actions)) {
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
+                ));
+                break;
+                
+            case "cpucore.zabbix":
+                // get cpu cores from zabbix
+                $responses[] = get_web_page(get_route_link("api.cpucore.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background.zabbix"
                 ));
                 break;
 

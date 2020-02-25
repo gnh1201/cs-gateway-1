@@ -147,7 +147,7 @@ if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_cpucore.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_core += get_int($row['core']);

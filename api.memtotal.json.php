@@ -80,8 +80,6 @@ if($mode == "background") {
 } elseif($mode == "background.zabbix") {
     zabbix_authenticate();
 
-    $hostips = array();
-
     $bind = array(
         "id" => $device_id
     );
