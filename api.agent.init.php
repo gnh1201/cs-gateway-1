@@ -61,10 +61,6 @@ foreach($devices as $device) {
         "setlimit" => 1,
         "setpage" => 1
     ));
-    
-    if($device['id'] == 128) {
-    write_common_log(get_db_binded_sql($sql, $bind), "test1");
-	}
 
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
