@@ -44,6 +44,10 @@ if(array_key_equals("JOBKEY", $jobargs, "init")) {
         $network_ip_list = explode_by_line($jobdata['Net_IP']);
         $network_mac_list = explode_by_line($jobdata['Net_MAC']);
 
+        // remove localhosts
+        array_key_unset(array_search("127.0.0.1", $network_ip_list), $network_ip_list);
+        array_key_unset(array_search("::1", $network_ip_list), $network_ip_list);
+
         // add device infomration
         $bind = array(
             "uuid" => $jobargs['UUID'],

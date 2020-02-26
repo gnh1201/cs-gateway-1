@@ -1,123 +1,74 @@
 <?php
+loadHelper("webpagetool");
 loadHelper("itsm.api");
-loadHelper("zabbix.api");
+loadHelper("UUID.class");
 
 $data = array(
-	"success" => false
+    "success" => false
 );
 
-$responses = array();
+// step 1: zabbix->datamon
+$sql = get_bind_to_sql_select("autoget_data_hosts.view1");
+$rows = exec_db_fetch_all($sql);
 
-$zabbix_hostids = array();
+foreach($rows as $row) {
+    if(empty($row['itsm_assetid'])) {
+        $tag = "ZBXHOST-" . $row['zabbix_hostid'];
 
-$bind = false;
-$sql = get_bind_to_sql_select("autoget_devices", $bind);
-$devices = exec_db_fetch_all($sql, $bind);
-foreach($devices as $device) {
-	$is_zabbix = !empty($device['zabbix_hostid']);
-	$is_itsm = !empty($device['itsm_assetid']);
-
-	$tag = "ZBXHOST-" . $device['zabbix_hostid'];
-
-	if($is_zabbix) {
-		$zabbix_hostids[] = $device['zabbix_hostid'];
-	}
-
-	if($is_zabbix && !$is_itsm) {
-		// insert new data to datamon
-		$responses[] = itsm_add_data("assets", array(
-			"categoryid" => 1,
-			"adminid" => 1,
-			"clientid" => 1,
-			"userid" => 1,
-			"manufacturerid" => "",
-			"modelid" => "",
-			"supplierid" => "",
-			"statusid" => "4",
-			"purchase_date" => date("Y-m-d"),
-			"warranty_date" => date("Y-m-d"),
-			"warranty_months" => 36,
-			"tag" => "ZBXHOST-" . $device['zabbix_hostid'],
-			"name" => $device['computer_name'],
-			"serial" => "",
-			"notes" => "",
-			"locationid" => "",
-			"qrvalue" => ""
-		));
-
-		// update asset ID to device
-		$rows = itsm_get_data("assets", array(
-			"tag" => $tag
-		));
-		foreach($rows as $row) {
-			$bind = array(
-				"id" => $device['id'],
-				"itsm_assetid" => $row->id
-			);
-			$sql = get_bind_to_sql_update("autoget_devices", $bind,  array(
-				"setkeys" => array("id")
-			));
-			exec_db_query($sql, $bind);
-		}
-		write_common_log("Added: " . $tag); 
-	} elseif(!$is_zabbix && $is_itsm) {
-		// change asset status to idle(idle=2)
-		$responses[] = itsm_edit_data("assets", array(
-			"id" => $device['itsm_assetid'],
-			"statusid" => "2"
-		));
-		write_common_log("Edited: " . $tag);
-	}
+        itsm_add_data("assets", array(
+            "categoryid" => 1,
+            "adminid" => 1,
+            "clientid" => 1,
+            "userid" => 1,
+            "manufacturerid" => "",
+            "modelid" => 1,
+            "supplierid" => "",
+            "statusid" => "4",
+            "purchase_date" => date("Y-m-d"),
+            "warranty_date" => date("Y-m-d"),
+            "warranty_months" => 36,
+            "tag" => $tag,
+            "name" => $row['hostname'],
+            "serial" => "",
+            "notes" => "",
+            "locationid" => "",
+            "qrvalue" => ""
+        ), array(
+            49 => $row['hostip']
+        ));
+    }
 }
 
-// get hosts from zabbix
-$bind = false;
-$sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $bind);
-$hosts = exec_db_fetch_all($sql, $bind);
-foreach($hosts as $host) {
-	$tag = "ZBXHOST-" . $host->hostid;
+// step 2: reload hosts list
+get_web_page(get_route_link("api.hosts.json"), "get");
 
-	if(!in_array($host->hostid, $zabbix_hostids)) {
-		// insert new data to datamon
-		$responses[] = itsm_add_data("assets", array(
-			"categoryid" => 1,
-			"adminid" => 1,
-			"clientid" => 1,
-			"userid" => 1,
-			"manufacturerid" => "",
-			"modelid" => "",
-			"supplierid" => "",
-			"statusid" => "4",
-			"purchase_date" => date("Y-m-d"),
-			"warranty_date" => date("Y-m-d"),
-			"warranty_months" => 36,
-			"tag" => $tag,
-			"name" => $host['hostname'],
-			"serial" => "",
-			"notes" => "",
-			"locationid" => "",
-			"qrvalue" => ""
-		), array(
-			49 => $host['hostip']
-		));
-		write_common_log("Added: " . $tag);
-	} else {
-		$rows = itsm_get_data("assets", array(
-			"tag" => $tag
-		));
-		foreach($rows as $row) {
-			$responses[] = itsm_edit_data("assets", array(
-				"id" => $row->id
-			), array(
-				49 => $host['hostip']
-			));
-			write_common_log("Edited: " . $tag);
-		}
-	}
+// step 3: init agents
+get_web_page(get_route_link("api.agent.init"), "get");
+
+// step 4: change status to idle
+$bind = false;
+$sql = get_bind_to_sql_select("autoget_devices", $bind);
+$rows = exec_db_fetch_all($sql, $bind); 
+foreach($rows as $row) {
+    $is_zabbix = !empty($row['zabbix_hostid']);
+    $is_itsm = !empty($row['itsm_assetid']);
+
+    if(!$is_zabbix && $is_itsm) {
+        // change asset status to idle(idle=2)
+        $rows = itsm_get_data("assets", array(
+            "id" => $row['itsm_assetid'],
+            "statusid" => 1
+        ));
+        foreach($rows as $row) {
+            $responses[] = itsm_edit_data("assets", array(
+                "id" => $row->id,
+                "statusid" => "2"
+            ));
+        }
+    }
 }
 
 $data['success'] = true;
-$data['responses'] = $responses;
 
 header("Content-Type: application/json");
 echo json_encode($data);
