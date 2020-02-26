@@ -71,8 +71,9 @@ foreach($devices as $device) {
 }
 
 // get hosts from zabbix
-zabbix_authenticate();
-$hosts = zabbix_get_hosts();
+$bind = false;
+$sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $bind);
+$hosts = exec_db_fetch_all($sql, $bind);
 foreach($hosts as $host) {
 	$tag = "ZBXHOST-" . $host->hostid;
 
@@ -90,25 +91,25 @@ foreach($hosts as $host) {
 			"purchase_date" => date("Y-m-d"),
 			"warranty_date" => date("Y-m-d"),
 			"warranty_months" => 36,
-			"tag" => "ZBXHOST-" . $host->hostid,
-			"name" => $host->host,
+			"tag" => $tag,
+			"name" => $host['hostname'],
 			"serial" => "",
 			"notes" => "",
 			"locationid" => "",
 			"qrvalue" => ""
 		), array(
-			49 => current($host->interfaces)->ip
+			49 => $host['hostip']
 		));
 		write_common_log("Added: " . $tag);
 	} else {
 		$rows = itsm_get_data("assets", array(
-			"tag" => "ZBXHOST-" . $host->hostid
+			"tag" => $tag
 		));
 		foreach($rows as $row) {
 			$responses[] = itsm_edit_data("assets", array(
 				"id" => $row->id
 			), array(
-				49 => current($host->interfaces)->ip
+				49 => $host['hostip']
 			));
 			write_common_log("Edited: " . $tag);
 		}
