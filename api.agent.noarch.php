@@ -143,7 +143,7 @@ if(!array_key_empty("id", $device)) {
     if(count($rows) == 0) {
         echo "jobkey: ping" . DOC_EOL;
         echo "jobstage: 0" . DOC_EOL;
-        exit;
+        //exit;
     }
 } else {
     set_error("Could not find your device ID");
@@ -164,11 +164,6 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
         "datetime" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_responses", $bind);
-
-    //if($command_id = 53) {
-    //    write_debug_log(get_db_binded_sql($sql, $bind));
-    //}
-
     exec_db_query($sql, $bind);
     $response_id = get_db_last_id();
 

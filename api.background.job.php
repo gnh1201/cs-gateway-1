@@ -42,7 +42,8 @@ $device_actions = array(
 	"disk.zabbix",
 	"hotfix",
 	"portmap",
-	"network"
+	"network",
+    "user"
 );
 
 $bind = false;

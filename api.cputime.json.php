@@ -63,9 +63,8 @@ if($mode == "background") {
         $_tbl1 = exec_db_temp_start($sql);
 
         $sql = "
-        select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, b.term as term, a.datetime as datetime
-            from $_tbl1 a left join autoget_terms b on a.term_id = b.id
-                where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
+        select a.pos_y as pos_y, if(a.pos_y = 2, ((a.pos_x + 1) / 6), (a.pos_x - 2)) as pos_x, a.term as term, a.datetime as datetime
+            from $_tbl1 a where (pos_y = 2 and mod(pos_x + 1, 6) = 0) or (pos_y = 3 and pos_x - 2 > 0)
         ";
         $_tbl2 = exec_db_temp_start($sql);
 
@@ -94,11 +93,11 @@ if($mode == "background") {
         $sql = "
             select concat(c.name, '#', c.pid) as name, avg(c.value) as value, c.datetime as datetime from (
                 select
-                    ifnull(group_concat(if(a.pos_x = 11, b.term, null)), 'Unknown') as name,
-                    group_concat(if(a.pos_x = 3, b.term, null)) as value,
-                    group_concat(if(a.pos_x = 2, b.term, null)) as pid,
+                    ifnull(group_concat(if(a.pos_x = 11, a.term, null)), 'Unknown') as name,
+                    group_concat(if(a.pos_x = 3, a.term, null)) as value,
+                    group_concat(if(a.pos_x = 2, a.term, null)) as pid,
                     a.datetime as datetime
-                from $_tbl1 a left join autoget_terms b on a.term_id = b.id
+                from $_tbl1 a
                 group by a.pos_y, a.datetime
             ) c group by name
         ";

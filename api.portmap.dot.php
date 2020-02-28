@@ -81,9 +81,9 @@ if($mode == "background") {
         // tasklist (windows)
         $sql = "
             select
-                group_concat(if(pos_x = 1, b.term, null)) as process_name,
-                group_concat(if(pos_x = 2, b.term, null)) as pid
-            from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                group_concat(if(pos_x = 1, a.term, null)) as process_name,
+                group_concat(if(pos_x = 2, a.term, null)) as pid
+            from $_tbl0 a
             where a.command_id = 1
             group by a.pos_y, a.datetime
         ";
@@ -98,11 +98,11 @@ if($mode == "background") {
                 a.pid as pid
             from (
                 select
-                    group_concat(if(a.pos_x = 2, b.term, null)) as address,
-                    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
-                    group_concat(if(a.pos_x = 4, b.term, null)) as state,
-                    group_concat(if(a.pos_x = 5, b.term, null)) as pid
-                from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                    group_concat(if(a.pos_x = 2, a.term, null)) as address,
+                    substring_index(group_concat(if(a.pos_x = 2, a.term, null)), ':', -1) as port,
+                    group_concat(if(a.pos_x = 4, a.term, null)) as state,
+                    group_concat(if(a.pos_x = 5, a.term, null)) as pid
+                from $_tbl0 a
                 where a.command_id = 2
                 group by a.pos_y, a.datetime
             ) a
@@ -146,12 +146,12 @@ if($mode == "background") {
                 a.process_name as process_name
             from (
                 select
-                    group_concat(if(a.pos_x = 2, b.term, null)) as address,
-                    substring_index(group_concat(if(a.pos_x = 2, b.term, null)), ':', -1) as port,
-                    group_concat(if(a.pos_x = 4, b.term, null)) as state,
-                    substring_index(group_concat(if(a.pos_x = 5, b.term, null)), '/', 1) as pid,
-                    substring_index(group_concat(if(a.pos_x = 5, b.term, null)), '/', -1) as process_name
-                from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                    group_concat(if(a.pos_x = 2, a.term, null)) as address,
+                    substring_index(group_concat(if(a.pos_x = 2, a.term, null)), ':', -1) as port,
+                    group_concat(if(a.pos_x = 4, a.term, null)) as state,
+                    substring_index(group_concat(if(a.pos_x = 5, a.term, null)), '/', 1) as pid,
+                    substring_index(group_concat(if(a.pos_x = 5, a.term, null)), '/', -1) as process_name
+                from $_tbl0 a
                 where command_id = 4
                 group by a.pos_y, a.datetime
             ) a
@@ -163,8 +163,6 @@ if($mode == "background") {
     // group by port
     $sql = "select * from $tablename group by port";
     $rows = exec_db_fetch_all($sql);
-    
-    var_dump($rows);
 
     // create table
     $tablename = exec_db_table_create(array(

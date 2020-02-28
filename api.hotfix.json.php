@@ -48,7 +48,7 @@ if($mode == "background") {
         "date" => array("date")
     ));
 
-    $sql = "select group_concat(b.term) as terms from $_tbl1 a left join autoget_terms b on a.term_id = b.id group by a.pos_y, a.datetime";
+    $sql = "select group_concat(a.term) as terms from $_tbl1 a group by a.pos_y, a.datetime";
     $rows = exec_db_fetch_all($sql);
 
     // end of life

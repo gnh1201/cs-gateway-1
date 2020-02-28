@@ -8,7 +8,11 @@ $now_dt = get_current_datetime();
 
 // get devices
 $bind = false;
-$sql = get_bind_to_sql_select("autoget_devices", $bind);
+$sql = get_bind_to_sql_select("autoget_devices", $bind, array(
+    "setwheres" => array(
+        array("and", array("not", "disabled", 1))
+    )
+));
 $devices = exec_db_fetch_all($sql, $bind);
 
 $bulkid = exec_db_bulk_start();

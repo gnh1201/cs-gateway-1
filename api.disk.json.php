@@ -71,11 +71,10 @@ if($mode == "background") {
         $sql = "
             select
                 group_concat(if(a.pos_x = 1, b.term, null)) as name,
-                ifnull(group_concat(if(a.pos_x = 4, b.term, null)), 0) as total,
-                ifnull(group_concat(if(a.pos_x = 3, b.term, null)), 0) as available
+                ifnull(group_concat(if(a.pos_x = 4, a.term, null)), 0) as total,
+                ifnull(group_concat(if(a.pos_x = 3, a.term, null)), 0) as available
             from
                 $_tbl1 a
-                left join autoget_terms b on a.term_id = b.id
             group by
                 a.pos_y, a.datetime
         ";
@@ -103,11 +102,10 @@ if($mode == "background") {
         $sql = "
             select
                 group_concat(if(a.pos_x = 1, b.term, null)) as name,
-                ifnull(group_concat(if(a.pos_x = 2, b.term, null)), 0) as total,
-                ifnull(group_concat(if(a.pos_x = 4, b.term, null)), 0) as available
+                ifnull(group_concat(if(a.pos_x = 2, a.term, null)), 0) as total,
+                ifnull(group_concat(if(a.pos_x = 4, a.term, null)), 0) as available
             from
                 $_tbl1 a
-                left join autoget_terms b on a.term_id = b.id
             group by
                 a.pos_y, a.datetime
         ";
@@ -232,7 +230,7 @@ if($mode == "background") {
     $sql = "select
         round(avg(if(itemname like 'total disk %', value, null))) as total,
         round(avg(if(itemname like 'free disk size %', value, null))) as pavailable,
-        round(avg(if(itemname like 'used disk %', value, null))) as pused,
+        round(avg(if(itemname like 'used disk %' and not itemname like 'used disk space %', value, null))) as pused,
         substring_index(itemname, ' ', -1) as name,
         itemname
     from $_tbl1 group by name";

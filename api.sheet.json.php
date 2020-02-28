@@ -8,7 +8,7 @@ $end_dt = get_requested_value("end_dt");
 $start_dt = get_requested_value("start_dt");
 $adjust = get_requested_value("adjust");
 
-write_debug_log("PID: $mypid, response_id: $response_id", "api.sheets.json");
+//write_debug_log("PID: $mypid, response_id: $response_id", "api.sheets.json");
 
 $now_dt = get_current_datetime();
 
@@ -36,10 +36,10 @@ if(empty($start_dt)) {
 //set_cpu_usage_limit(0.2);
 
 // set time limit (10 minutes)
-set_max_execution_time(600);
+//set_max_execution_time(600);
 
 // wait a few seconds if minimum cpu idle or below (30%)
-set_min_cpu_idle(0.3);
+//set_min_cpu_idle(0.3);
 
 $data = array(
     "success" => false
@@ -77,7 +77,8 @@ $scheme = array(
     "device_id" => array("int", 11),
     "pos_y" => array("int", 5),
     "pos_x" => array("int", 5),
-    "term_id" => array("bigint", 20),
+    //"term_id" => array("bigint", 20),
+    "term" => array("varchar", 255),
     "datetime" => array("datetime")
 );
 
@@ -134,8 +135,9 @@ foreach($responses as $response) {
     // insert sheets
     foreach($sheets as $sheet) {
         // set term
-        $term = $sheet[2];
+        $term = trim($sheet[2]);
 
+/*
         // get term_id from memory
         $term_id = array_search($term, $prev_terms);
         
@@ -192,11 +194,28 @@ foreach($responses as $response) {
             //exec_db_query($sql, $bind);
             exec_db_bulk_push($sheets_bulk_id, $bind);
         }
+*/
+
+        if(!empty($term)) {
+            $bind = array(
+                "response_id" => $response['id'],
+                "device_id" => $response['device_id'],
+                "command_id" => $response['command_id'],
+                "pos_y" => $sheet[0],
+                "pos_x" => $sheet[1],
+                "term" => $term,
+                "datetime" => $now_dt
+            );
+        }
+        exec_db_bulk_push($sheets_bulk_id, $bind);
     }
 
     // end bulk of sheets
-    $bindkeys = array("response_id", "device_id", "command_id", "pos_y", "pos_x", "term_id", "datetime");
+    $bindkeys = array("response_id", "device_id", "command_id", "pos_y", "pos_x", "term", "datetime");
     exec_db_bulk_end($sheets_bulk_id, $tablename, $bindkeys);
+
+    $command_id = $response['command_id'];
+    //write_debug_log("PID: $mypid, response_id: $response_id, command_id: $command_id", "api.sheets.json");
 }
 
 $data['success'] = true;

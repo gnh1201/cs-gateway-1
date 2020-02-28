@@ -61,11 +61,11 @@ if($mode == "background") {
 
         $sql = "
             select
-                group_concat(if(pos_x = 1, b.term, null)) as name,
-                max(if(pos_x = 4, replace(b.term, ',', ''), null)) as _value, 
-                round((max(if(pos_x = 4, replace(b.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
+                group_concat(if(pos_x = 1, a.term, null)) as name,
+                max(if(pos_x = 4, replace(a.term, ',', ''), null)) as _value, 
+                round((max(if(pos_x = 4, replace(a.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
                 a.datetime as datetime
-            from $_tbl2 a left join autoget_terms b on a.term_id = b.id
+            from $_tbl2 a
             group by a.pos_y, a.datetime
         ";
         $_tbl3 = exec_db_temp_start($sql);
@@ -90,11 +90,11 @@ if($mode == "background") {
         $sql = "
             select concat(c.name, '#', c.pid) as name, avg(c.value) as value, ({$_total} * (avg(c.value) / 100)) as _value, c.datetime as datetime from (
                 select
-                    ifnull(group_concat(if(a.pos_x = 11, b.term, null)), 'Unknown') as name,
-                    group_concat(if(a.pos_x = 2, b.term, null)) as pid,
-                    group_concat(if(a.pos_x = 4, b.term, null)) as value,
+                    ifnull(group_concat(if(a.pos_x = 11, a.term, null)), 'Unknown') as name,
+                    group_concat(if(a.pos_x = 2, a.term, null)) as pid,
+                    group_concat(if(a.pos_x = 4, a.term, null)) as value,
                     a.datetime as datetime
-                from $_tbl2 a left join autoget_terms b on a.term_id = b.id
+                from $_tbl2 a
                 group by a.pos_y, a.datetime
             ) c group by name
         ";

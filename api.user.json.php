@@ -34,6 +34,13 @@ $data = array(
     "success" => false
 );
 
+// get device information
+$bind = array(
+    "id" => $device_id
+);
+$sql = get_bind_to_sql_select("autoget_devices", $bind);
+$device = exec_db_fetch($sql, $bind);
+
 if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
@@ -53,11 +60,8 @@ if($mode == "background") {
             array("and", array("gte", "datetime", $start_dt))
         )
     ));
-
-    //$rows = exec_db_fetch_all($sql, $bind);
-    //var_dump($rows);
-
     $_tbl0 = exec_db_temp_start($sql, $bind);
+    
     $sql = "
         select
             c.device_id as device_id,
@@ -66,9 +70,9 @@ if($mode == "background") {
         from (
             select
                 a.device_id as device_id,
-                group_concat(if(a.pos_x=1, b.term, null)) as disabled,
-                group_concat(if(a.pos_x=2, b.term, null)) as username
-            from $_tbl0 a left join autoget_terms b on a.term_id = b.id
+                group_concat(if(a.pos_x=1, a.term, null)) as disabled,
+                group_concat(if(a.pos_x=2, a.term, null)) as username
+            from $_tbl0 a
             group by a.pos_y, a.datetime
         ) c group by c.username
     ";
@@ -81,7 +85,10 @@ if($mode == "background") {
         "basetime" => array("datetime")
     ), "autoget_data_user", array(
         "setindex" => array(
-            "index_1" => array("device_id", "datetime")
+            "index_1" => array("datetime")
+        ),
+        "setunique" => array(
+            "unique_1" => array("device_id", "username")
         )
     ));
 
@@ -90,13 +97,16 @@ if($mode == "background") {
             $disabled = 0;
             $terms = get_tokenized_text(strtolower($row['disabled']), array(" ", "/"));
 
-            if(in_array("true", $terms)) {
+            //write_debug_log(json_encode($device));
+            //write_debug_log(json_encode($terms));
+
+            if($device['platform'] == "windows" && in_array("true", $terms)) {
                 $disabled = 1;
             }
 
-            //if($disabled == 0 && !in_array("bash", $terms)) {
-            //    $disabled = 1;
-            //}
+            if($device['platform'] == "linux" && !in_array("bash", $terms)) {
+                $disabled = 1;
+            }
 
             $bind = array(
                 "device_id" => $device_id,
@@ -104,12 +114,12 @@ if($mode == "background") {
                 "disabled" => $disabled,
                 "basetime" => $now_dt
             );
-            $sql = get_bind_to_sql_insert($tablename, $bind);
+            $sql = get_bind_to_sql_insert($tablename, $bind, array(
+                "setkeys" => array("device_id", "username")
+            ));
             exec_db_query($sql, $bind);
         }
     }
-
-    // do import
 
     // get device UUID
     $device_uuid  = "";

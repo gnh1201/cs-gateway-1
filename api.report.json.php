@@ -88,7 +88,7 @@ if($mode == "make.excel") {
         set_error("planner is required");
         show_errors();
     }
-    
+ 
     // get clients information
     $clientcategories = itsm_get_data("clientcategories");
     $clients = itsm_get_data("clients");
