@@ -33,7 +33,7 @@ if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_memtotal", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_memtotal.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_total += get_int($row['total']);
@@ -216,7 +216,7 @@ if($mode == "background") {
     );
     $sql = "
         select avg(`load`) as `load`, avg(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-        from `autoget_data_mem.zabbix`
+        from `autoget_data_mem`
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by timekey
     ";

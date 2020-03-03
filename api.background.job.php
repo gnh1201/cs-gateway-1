@@ -222,7 +222,7 @@ if($action == "report.excel") {
     $planner = get_requested_value("planner");
 
     // make report excel
-    $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+    $responses[] = get_web_page(get_route_link("api.report.json"), "get.async", array(
         "end_dt" => $end_dt,
         "adjust" => $adjust,
         "mode" => "make.excel",
@@ -232,22 +232,22 @@ if($action == "report.excel") {
 
 // simulation
 if($action == "report.batch") {
-    $s = array(range(1, 31), range(1, 3));
+    $s = array(range(27, 31), range(1, 29), array(1));
     $d = array();
     foreach($s as $k=>$v) {
         foreach($v as $a) {
             $d[] = sprintf("%04d-%02d-%02d", 2020, $k + 1, $a);
         }
     }
-    $w = array("2020-01-03", "2020-01-10", "2020-01-17", "2020-01-24", "2020-01-31");
-    $m = array("2020-01-31");
-    
+    $w = array("2020-01-31", "2020-02-07", "2020-02-14", "2020-02-21", "2020-02-28");
+    $m = array("2020-01-31", "2020-02-28");
+
     // daily
     foreach($d as $_d) {
         $end_dt = $_d . " 18:00:00";
         $adjust = "-10h";
         $planner = "daily";
-        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get.async", array(
             "end_dt" => $end_dt,
             "adjust" => $adjust,
             "mode" => "make.excel",
@@ -260,7 +260,7 @@ if($action == "report.batch") {
         $end_dt = $_w. " 18:00:00";
         $adjust = "-5d";
         $planner = "weekly";
-        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get.async", array(
             "end_dt" => $end_dt,
             "adjust" => $adjust,
             "mode" => "make.excel",
@@ -269,11 +269,14 @@ if($action == "report.batch") {
     }
     
     // monthly
-    foreach($m as $_m) {
+    foreach($m as $k=>$_m) {
         $end_dt = $_m. " 18:00:00";
         $adjust = "-30d";
+        if($k == 0) $adjust = "-31d";
+        if($k == 1) $adjust = "-28d";
+
         $planner = "monthly";
-        $responses[] = get_web_page(get_route_link("api.report.json"), "get", array(
+        $responses[] = get_web_page(get_route_link("api.report.json"), "get.async", array(
             "end_dt" => $end_dt,
             "adjust" => $adjust,
             "mode" => "make.excel",

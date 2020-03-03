@@ -90,7 +90,7 @@ if($mode == "make.excel") {
     }
  
     // get clients information
-    $clientcategories = itsm_get_data("clientcategories");
+    $clientcategories = itsm_get_data("clientcategories");    
     $clients = itsm_get_data("clients");
     $assets = itsm_get_data("assets");
 

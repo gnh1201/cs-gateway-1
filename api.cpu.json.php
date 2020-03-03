@@ -43,7 +43,7 @@ if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_cpucore.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_core += get_int($row['core']);
@@ -82,7 +82,7 @@ if($mode == "background") {
     $_tbl3 = exec_db_temp_start($sql, false);
     
     $delimiters = array(" ", "(", ")");
-    $stopwords = array("Idle", "_Total", "typepref");
+    $stopwords = array("Idle", "_Total", "typeperf");
     $stopwords = array_merge(get_tokenized_text($device['computer_name'], $delimiters), $stopwords);
     $sql = sprintf("select sum(value) as value, datetime from $_tbl3 where name not in ('%s') group by datetime", implode("', '", $stopwords));
     $_tbl4 = exec_db_temp_start($sql, false);
@@ -97,11 +97,11 @@ if($mode == "background") {
         "start_dt" => $start_dt,
         "end_dt" => $end_dt
     );
-    $sql = "
-        select sum(`value`) as `load`, max('core') as `core`, max(`basetime`) as `basetime`
+    $sql = sprintf("
+        select sum(`value`) as `load`, %s as `core`, max(`basetime`) as `basetime`
         from autoget_data_cputime
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt group by basetime
-    ";
+    ", $_core);
     $rows = exec_db_fetch_all($sql, $bind);
 
     // create table
@@ -224,7 +224,7 @@ if($mode == "background") {
     );
     $sql = "
         select ifnull(avg(`load`), 0.0) as `load`, max(`core`) as `core`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-            from `autoget_data_cpu.zabbix`
+            from `autoget_data_cpu`
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey
     ";

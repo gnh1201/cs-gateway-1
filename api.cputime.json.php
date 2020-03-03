@@ -43,7 +43,7 @@ if($mode == "background") {
     $bind = array(
         "device_id" => $device_id
     );
-    $sql = get_bind_to_sql_select("autoget_data_cpucore", $bind);
+    $sql = get_bind_to_sql_select("autoget_data_cpucore.zabbix", $bind);
     $rows = exec_db_fetch_all($sql, $bind);
     foreach($rows as $row) {
         $_core += get_int($row['core']);
@@ -90,8 +90,8 @@ if($mode == "background") {
         ));
         $_tbl1 = exec_db_temp_start($sql);
 
-        $sql = "
-            select concat(c.name, '#', c.pid) as name, avg(c.value) as value, c.datetime as datetime from (
+        $sql = sprintf("
+            select concat(c.name, '#', c.pid) as name, round(avg(c.value) / %s, 2) as value, c.datetime as datetime from (
                 select
                     ifnull(group_concat(if(a.pos_x = 11, a.term, null)), 'Unknown') as name,
                     group_concat(if(a.pos_x = 3, a.term, null)) as value,
@@ -100,7 +100,12 @@ if($mode == "background") {
                 from $_tbl1 a
                 group by a.pos_y, a.datetime
             ) c group by name
-        ";
+        ", $_core);
+        
+        if($device_id == 18) {
+            write_debug_log($sql);
+        }
+        
         $rows = exec_db_fetch_all($sql);
     }
 
