@@ -24,10 +24,12 @@ if(in_array("query", $_p)) {
         "name" => $panel_hash,
         "text" => $requests['_RAW'],
         "uri" => $uri,
-        "datetime" => get_current_datetime()
+        "datetime" => get_current_datetime(),
+        "last" => get_current_datetime()
     );
     $sql = get_bind_to_sql_insert("autoget_data_reverse", $bind, array(
-        "setkeys" => array("name")
+        "setkeys" => array("name"),
+        "setfixeds" => array("datetime")
     ));
     exec_db_query($sql, $bind);
 
