@@ -12,12 +12,13 @@ $panel_hash = "";
 
 $_p = explode("/", $uri);
 $_data = array();
+
 if(in_array("query", $_p)) {
     // get requested data
     $targets = get_requested_value("targets", array("_JSON"));
     $panel_id = get_requested_value("panelId", array("_JSON"));
     $panel_hash = get_hashed_text(serialize(array("panel_id" => $panel_id, "targets" => $targets)));
-    
+
     // save requested data
     $bind = array(
         "name" => $panel_hash,
@@ -32,29 +33,29 @@ if(in_array("query", $_p)) {
 
     // get saved data
     if($mode != "background") {
-		$bind = array(
-	        "name" => $panel_hash,
-	        "status" => 1
-		);
-		$sql = get_bind_to_sql_select("autoget_data_reverse_file", $bind, array(
-			"setorders" => array(
-				array("desc", "datetime")
-			),
-			"setlimit" => 1,
-			"setpage" => 1
-		));
-		$rows = exec_db_fetch_all($sql, $bind);
+        $bind = array(
+            "name" => $panel_hash,
+            "status" => 1
+        );
+        $sql = get_bind_to_sql_select("autoget_data_reverse_file", $bind, array(
+            "setorders" => array(
+                array("desc", "datetime")
+            ),
+            "setlimit" => 1,
+            "setpage" => 1
+        ));
+        $rows = exec_db_fetch_all($sql, $bind);
 
-		foreach($rows as $row) {
-			$filename = $row['file'];
-			$fr = read_storage_file($filename, array(
-				"storage_type" => "cache"
-			));
-			if(!empty($fr)) {
-				echo $fr;
-				exit;
-			}
-		}
+        foreach($rows as $row) {
+            $filename = $row['file'];
+            $fr = read_storage_file($filename, array(
+                "storage_type" => "cache"
+            ));
+            if(!empty($fr)) {
+                echo $fr;
+                exit;
+            }
+        }
     }
 
     // get hosts from zabbix server
@@ -66,27 +67,39 @@ if(in_array("query", $_p)) {
     $_tbl1 = exec_db_temp_create(array(
         "hostid" => array("int", 11),
         "hostname" => array("varchar", 255),
-        "hostip" => array("varchar", 255)
+        "hostip" => array("varchar", 255),
+        "hostgroups" => array("varchar", 255)
     ));
+
     foreach($hosts as $host) {
+		$_hostgroups = array();
+		foreach($host->groups as $hostgroup) {
+			$_hostgroups[] = $hostgroup->name;
+		}
+
         $bind = array(
             "hostid" => $host->hostid,
             "hostname" => $host->host,
-            "hostip" => $host->interfaces[0]->ip
+            "hostip" => $host->interfaces[0]->ip,
+            "hostgroups" => implode(",", $_hostgroups)
         );
-        //$sql = get_bind_to_sql_insert($_tbl1, $bind);
-        //exec_db_query($sql, $bind);
         exec_db_bulk_push($bulkid, $bind);
     }
-    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "hostip"));
+    exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "hostip", "hostgroups"));
 
     // get IPs by range
+    $hostgroups = array();
     $hostips = array();
     $hostnames = array();
     $types = array("polystat"); // polystat is default
     $severities = array();
     foreach($targets as $target) {
         switch($target->target) {
+            case "hostgroups":
+                foreach($target->data as $v) {
+                    $hostgroups[] = $v;
+                }
+                break;
             case "hostips":
                 $hostips = array();
                 foreach($target->data as $v) {
@@ -98,6 +111,7 @@ if(in_array("query", $_p)) {
                 foreach($targets->data as $v) {
                     $hostnames[] = $v;
                 }
+                break;
             case "types":
                 $types = array();
                 foreach($target->data as $v) {
@@ -118,72 +132,45 @@ if(in_array("query", $_p)) {
         }
     }
 
-    // get hosts by IP
+	// initialize
     $setwheres = array();
-    $_setwheres = array();
+
+    // get hosts by IP
     foreach($hostips as $ip) {
-        $_setwheres[] = array("or", array("eq", "hostip", $ip));
+        $setwheres[] = array("or", array("eq", "hostip", $ip));
 
         $d = explode("*", $ip);
         if(count($d) > 1) {
-            $_setwheres[] = array("or", array("left", "hostip", $d[0]));
+            $setwheres[] = array("or", array("left", "hostip", $d[0]));
         }
     }
+    
+    // get hosts by host name
     foreach($hostnames as $name) {
-        $_setwheres[] = array("or", array("eq", "hostname", $name));
+        $setwheres[] = array("or", array("eq", "hostname", $name));
 
         $d = explode("*", $name);
         if(count($d) > 1) {
-            $_setwheres[] = array("or", array("left", "hostname", $d[0]));
+            $setwheres[] = array("or", array("left", "hostname", $d[0]));
         }
     }
-    $setwheres[] = array("and", $_setwheres);
 
+    // get hosts by hostgroups
+    if(count($hostgroups) > 0) {
+		$setwheres[] = array("or", array("inset", "hostgroups", $hostgroups));
+	}
+    
     // make SQL statement
     $sql = get_bind_to_sql_select($_tbl1, false, array(
         "setwheres" => $setwheres
     ));
-
+    
     // save rows to temporary table
     $_tbl1_0 = exec_db_temp_start($sql, false);
 
     // get rows
     $sql = get_bind_to_sql_select($_tbl1_0);
     $rows = exec_db_fetch_all($sql);
-
-/*
-    // get problems
-    $bulkid = exec_db_bulk_start();
-    $_tbl2 = exec_db_temp_create(array(
-        "hostid" => array("int", 11),
-        "eventid" => array("int", 11),
-        "hostname" => array("varchar", 255),
-        "description" => array("varchar", 255),
-        "severity" => array("tinyint", 1),
-        "suppressed" => array("tinyint", 1),
-        "acknowledged" => array("tinyint", 1),
-        "debug" => array("text")
-    ));
-    foreach($rows as $row) {
-        $problems = zabbix_get_problems($row['hostid']);
-        foreach($problems as $problem) {
-            $bind = array(
-                "hostid" => $row['hostid'],
-                "eventid" => $problem->eventid,
-                "hostname" => $row['hostname'],
-                "description" => $problem->name,
-                "severity" => $problem->severity,
-                "suppressed" => $problem->suppressed,
-                "acknowledged" => $problem->acknowledged,
-                "debug" => json_encode($problem)
-            );
-            //$sql = get_bind_to_sql_insert($_tbl2, $bind);
-            //exec_db_query($sql, $bind);
-            exec_db_bulk_push($bulkid, $bind);
-        }
-    }
-    exec_db_bulk_end($bulkid, $_tbl2, array("hostid", "eventid", "hostname", "description", "severity", "suppressed", "acknowledged", "debug"));
-*/
 
     // get triggers
     $_tbl2 = exec_db_temp_create(array(
@@ -192,8 +179,8 @@ if(in_array("query", $_p)) {
         "description" => array("varchar", 255),
         "severity" => array("tinyint", 1),
         "timestamp" => array("varchar", 255)
-        //"debug" => array("text")
     ));
+
     foreach($rows as $row) {
         $triggers = zabbix_get_triggers($row['hostid']);
         $alerts = zabbix_get_alerts($row['hostid']);
@@ -214,10 +201,7 @@ if(in_array("query", $_p)) {
                 "description" => $trigger->description,
                 "severity" => $trigger->priority,
                 "timestamp" => date($config['timeformat'], intval($_timestamp)),
-                //"debug" => json_encode($trigger),
             );
-            //$sql = get_bind_to_sql_insert($_tbl2, $bind);
-            //exec_db_query($sql, $bind);
             exec_db_bulk_push($bulkid, $bind);
         }
         exec_db_bulk_end($bulkid, $_tbl2, array("hostid", "hostname", "description", "severity", "timestamp"));
@@ -244,10 +228,10 @@ if(in_array("query", $_p)) {
     // if panel type is singlestat
     if(in_array("singlestat", $types)) {
         // post-processing problems
-        //$sql = "select hostid, hostname, max(severity) as severity from $_tbl2 group by hostid";
         $sql = "select a.hostid as hostid, a.hostname as hostname, max(b.severity) as severity from $_tbl1_0 a left join $_tbl2 b on a.hostid = b.hostid group by a.hostid";
         $_tbl3 = exec_db_temp_start($sql);
 
+        $sql = "";
         if(count($severities) > 0) {
             $sql = sprintf("select concat('upper_', severity) as name, count(*) as lastvalue from $_tbl3 where severity in (%s) group by severity", implode(",", $severities));
         } else {
@@ -282,10 +266,7 @@ if(in_array("query", $_p)) {
                 array("text" => "Hostname", "type" => "text"),
                 array("text" => "Description", "type" => "text"),
                 array("text" => "Severity", "type" => "number"),
-                array("text" => "Timestamp", "type" => "timestamp"),
-                //array("text" => "Suppressed", "type" => "number"),
-                //array("text" => "Acknowledged", "type" => "number"),
-                //array("text" => "Debug", "type" => "number")
+                array("text" => "Timestamp", "type" => "timestamp")
             ),
             "rows" => $rows,
             "type" => "table"

@@ -20,7 +20,9 @@ if(in_array("query", $_p)) {
     ));
 
     $itemnames = array();
+    $hostnames = array();
     $hostips = array();
+    $hostgroups = array();
     $targets = get_requested_value("targets", array("_JSON"));
     $panel_id = get_requested_value("panelId", array("_JSON"));
     $panel_hash = get_hashed_text(serialize(array("panel_id" => $panel_id, "targets" => $targets)));
@@ -66,9 +68,19 @@ if(in_array("query", $_p)) {
 
     foreach($targets as $target) {
         switch($target->target) {
+            case "hostgroups":
+                foreach($target->data as $v) {
+                    $hostgroups[] = $v;
+                }
+                break;
             case "itemnames":
                 foreach($target->data as $v) {
                     $itemnames[] = $v;
+                }
+                break;
+            case "hostnames":
+                foreach($target->data as $v) {
+                    $hostnames[] = $v;
                 }
                 break;
             case "hostips":
@@ -86,9 +98,27 @@ if(in_array("query", $_p)) {
         $hostname = $host->host;
         $hostip = $host->interfaces[0]->ip;
 
-        if(!in_array($hostip, $hostips)) {
-            continue;
+        $_hostgroups = array();
+        foreach($host->groups as $hostgroup) {
+            $_hostgroups[] = $hostgroup->name;
         }
+
+        $flag = false;
+
+        if(in_array($hostname,  $hostnames) || in_array($hostip, $hostips)) {
+            $flag = true;
+        }
+
+        if(!$flag) {
+            foreach($_hostgroups as $_hostgroup) {
+                if(in_array($_hostgroup, $hostgroups)) {
+                    $flag = true;
+                    break;
+                }
+            }
+        }
+
+        if(!$flag) continue;
 
         foreach($itemnames as $itemname) {
             $items = zabbix_get_items($hostid);
@@ -109,14 +139,11 @@ if(in_array("query", $_p)) {
                         "itemname" => $itemname,
                         "lastvalue" => $lastvalue
                     );
-                    //$sql = get_bind_to_sql_insert($_tbl1, $bind);
-                    //exec_db_query($sql, $bind);
                     exec_db_bulk_push($bulkid, $bind);
                 }
             }
         }
     }
-
     exec_db_bulk_end($bulkid, $_tbl1, array("hostid", "hostname", "itemname", "lastvalue"));
 
     //$sql = get_bind_to_sql_select($_tbl1);
