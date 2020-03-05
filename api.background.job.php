@@ -351,7 +351,9 @@ if($action == "grafana.status") {
 	$bind = false;
 	$sql = get_bind_to_sql_select("autoget_data_reverse", $bind, array(
 		"setwheres" => array(
-			array("and", array("like", "uri", "/api.zbx.status.json"))
+			array("and", array("like", "uri", "/api.zbx.status.json")),
+			array("and", array("lte", "last", $end_dt)),
+			array("and", array("gte", "last", $start_dt))
 		)
 	));
 	$rows = exec_db_fetch_all($sql, $bind);
