@@ -109,8 +109,10 @@ $prev_terms = array();
 
 // processing responses
 foreach($responses as $response) {
-    $response_text = get_uncompressed_text($response['response']);
-    
+    $response_text = gzdecode(base64_decode($response['response']));
+    //$response_text = get_uncompressed_text($response['response']);
+    //$response_text = $response['response'];
+
     // make sheets
     $sheets = array();
     $pos_y = 0;  // position y axis

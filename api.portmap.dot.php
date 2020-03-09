@@ -146,11 +146,11 @@ if($mode == "background") {
                 a.process_name as process_name
             from (
                 select
-                    group_concat(if(a.pos_x = 2, a.term, null)) as address,
-                    substring_index(group_concat(if(a.pos_x = 2, a.term, null)), ':', -1) as port,
-                    group_concat(if(a.pos_x = 4, a.term, null)) as state,
-                    substring_index(group_concat(if(a.pos_x = 5, a.term, null)), '/', 1) as pid,
-                    substring_index(group_concat(if(a.pos_x = 5, a.term, null)), '/', -1) as process_name
+                    group_concat(if(a.pos_x = 4, a.term, null)) as address,
+                    substring_index(group_concat(if(a.pos_x = 4, a.term, null)), ':', -1) as port,
+                    group_concat(if(a.pos_x = 6, a.term, null)) as state,
+                    substring_index(group_concat(if(a.pos_x = 7, a.term, null)), '/', 1) as pid,
+                    substring_index(group_concat(if(a.pos_x = 7, a.term, null)), '/', -1) as process_name
                 from $_tbl0 a
                 where command_id = 4
                 group by a.pos_y, a.datetime

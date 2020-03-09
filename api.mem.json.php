@@ -151,7 +151,7 @@ if($mode == "background") {
         $items = zabbix_get_items($device['zabbix_hostid']);
         foreach($items as $item) {
             if($item->name == "Memory Usage" && $item->status == "0") {
-                $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
+                $_records = zabbix_get_records($item->itemid, $end_dt, $adjust, array(1, 2, 3, 4, 5));
                 $records = array_merge($records, $_records);
             }
         }
@@ -216,7 +216,7 @@ if($mode == "background") {
     );
     $sql = "
         select avg(`load`) as `load`, avg(`total`) as `total`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-        from `autoget_data_mem`
+        from `autoget_data_mem.zabbix`
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by timekey
     ";

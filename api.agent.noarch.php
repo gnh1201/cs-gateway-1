@@ -160,7 +160,9 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $bind = array(
         "command_id" => $command_id,
         "device_id" => $device_id,
-        "response" => get_compressed_text($response),
+        //"response" => get_compressed_text($response),
+        "response" => base64_encode(gzencode($response)),
+        //"response" => $response,
         "datetime" => $now_dt
     );
     $sql = get_bind_to_sql_insert("autoget_responses", $bind);
@@ -194,6 +196,6 @@ if(array_key_equals("JOBKEY", $jobargs, "cmd")) {
     $bind = array(
         "response_id" => $response_id
     );
-    $response = get_web_page(get_route_link("api.sheet.json"), "get.async", $bind);
-    //$pid = get_int($response['content']);
+    //get_web_page(get_route_link("api.sheet.json"), "get.async", $bind);
+    get_web_page(get_route_link("api.sheet2.json"), "get.async", $bind);
 }

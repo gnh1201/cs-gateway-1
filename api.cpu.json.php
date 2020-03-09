@@ -159,11 +159,13 @@ if($mode == "background") {
         $items = zabbix_get_items($device['zabbix_hostid']);
         foreach($items as $item) {
             if($item->name == "CPU Usage" && $item->status == "0") {
-                $_records = zabbix_get_records($item->itemid, $end_dt, $adjust);
+                $_records = zabbix_get_records($item->itemid, $end_dt, $adjust, array(1, 2, 3, 4, 5));
                 $records = array_merge($records, $_records);
             }
         }
     }
+
+    //write_debug_log(json_encode($records));
 
     $tablename = exec_db_temp_create(array(
         "itemid" => array("int", 11),
@@ -224,7 +226,7 @@ if($mode == "background") {
     );
     $sql = "
         select ifnull(avg(`load`), 0.0) as `load`, max(`core`) as `core`, max(`basetime`) as `basetime`, floor(unix_timestamp(`basetime`) / (5 * 60)) as `timekey`
-            from `autoget_data_cpu`
+            from `autoget_data_cpu.zabbix`
             where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
             group by timekey
     ";

@@ -100,12 +100,7 @@ if($mode == "background") {
                 from $_tbl1 a
                 group by a.pos_y, a.datetime
             ) c group by name
-        ", $_core);
-        
-        if($device_id == 18) {
-            write_debug_log($sql);
-        }
-        
+        ", $_core); 
         $rows = exec_db_fetch_all($sql);
     }
 
