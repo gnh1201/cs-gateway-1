@@ -19,7 +19,7 @@ from (
         max(`load`) as max_load,
         max(`basetime`) as basetime,
         floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
-    from autoget_data_cpu
+    from `autoget_data_cpu.zabbix`
     where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
     group by device_id, timekey
 ) a left join  (
@@ -29,7 +29,7 @@ from (
         max(`load`) as max_load,
         max(`basetime`) as basetime,
         floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
-    from autoget_data_mem
+    from `autoget_data_mem.zabbix`
     where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
     group by device_id, timekey
 ) b on a.timekey = b.timekey left join (
@@ -37,7 +37,7 @@ from (
         device_id,
         max(`qty`) as qty,
         avg(`load`) as avg_load,
-        avg(`max_load`) as max_load,
+        max(`load`) as max_load,
         max(`basetime`) as basetime,
         floor(unix_timestamp(`basetime`) / (15 * 60)) as `timekey`
     from (
@@ -45,9 +45,8 @@ from (
             device_id,
             basetime,
             count(`name`) as `qty`,
-            avg(`load`) as `load`,
-            max(`load`) as `max_load`
-        from autoget_data_disk
+            avg(`load`) as `load`
+        from `autoget_data_disk.zabbix`
         group by device_id, basetime
     ) _c
     where _c.device_id = :device_id and _c.basetime >= :start_dt and _c.basetime <= :end_dt
