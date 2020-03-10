@@ -1,4 +1,6 @@
 <?php
+loadHelper("itsm.api");
+
 $device_id = get_requested_value("device_id");
 $start_dt = get_requested_value("start_dt");
 $end_dt = get_requested_value("end_dt");
@@ -64,7 +66,7 @@ if($mode == "background") {
 
         $sql = "
             select
-                group_concat(if(a.pos_x >= 3, a.term, null) separator ' ') as name
+                group_concat(if(a.pos_x >= 3, a.term, null) order by a.pos_x asc separator ' ') as name
             from $_tbl1 a
             group by pos_y, datetime
         ";
@@ -117,6 +119,29 @@ if($mode == "background") {
             ));
             exec_db_query($_sql, $_bind);
         }
+    }
+    
+    $data['success'] = true;
+} elseif($mode == "itsm.import") {
+    $bind = array(
+        "device_id" => $device_id
+    );
+    $sql = get_bind_to_sql_select($tablename, $bind);
+    $rows = exec_db_fetch_all($sql, $bind);
+    foreach($rows as $row) {
+        $tag = sprintf("ITLD-%s-%x", $device_id, crc32($row['name']));
+        itsm_add_data("licenses", array(
+            "clientid" => 1,
+            "statusid" => 1,
+            "categoryid" => 4,
+            "supplierid" => 3,
+            "seats" => 1,
+            "tag" => $tag,
+            "name" => $row['name'],
+            "serial" => "",
+            "notes" => "",
+            "qrvalue" => "",
+        ));
     }
     
     $data['success'] = true;

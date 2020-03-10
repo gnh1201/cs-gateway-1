@@ -44,7 +44,8 @@ $device_actions = array(
 	"portmap",
 	"network",
     "user",
-    "software"
+    "software",
+    "software.import"
 );
 
 $bind = false;
@@ -206,6 +207,15 @@ if(in_array($action, $device_actions)) {
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
+                ));
+                break;
+                
+            case "software.import":
+                // get memory total
+                $responses[] = get_web_page(get_route_link("api.software.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "itsm.import"
                 ));
                 break;
         }
