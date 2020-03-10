@@ -52,7 +52,7 @@ if($mode == "background") {
                 array("and", array("eq", "command_id", 1)),
                 array("and", array("eq", "device_id", $device_id)),
                 array("and", array("gt", "pos_y", 3)),
-                array("and", array("in", "pos_x", array(1, 4))),
+                array("and", array("in", "pos_x", array(1, 5))),
                 array("and", array("gte", "datetime", $start_dt)),
                 array("and", array("lte", "datetime", $end_dt))
             )
@@ -62,8 +62,8 @@ if($mode == "background") {
         $sql = "
             select
                 group_concat(if(pos_x = 1, a.term, null)) as name,
-                max(if(pos_x = 4, replace(a.term, ',', ''), null)) as _value, 
-                round((max(if(pos_x = 4, replace(a.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
+                avg(if(pos_x = 5, replace(a.term, ',', ''), null)) as _value, 
+                round((max(if(pos_x = 5, replace(a.term, ',', ''), null)) / {$_total} ) * 100, 5) as value,
                 a.datetime as datetime
             from $_tbl2 a
             group by a.pos_y, a.datetime
@@ -88,7 +88,12 @@ if($mode == "background") {
         $_tbl2 = exec_db_temp_start($sql);
 
         $sql = "
-            select concat(c.name, '#', c.pid) as name, avg(c.value) as value, ({$_total} * (avg(c.value) / 100)) as _value, c.datetime as datetime from (
+            select
+                concat(c.name, '#', c.pid) as name,
+                avg(c.value) as value,
+                ({$_total} * (avg(c.value) / 100)) as _value,
+                c.datetime as datetime
+            from (
                 select
                     ifnull(group_concat(if(a.pos_x = 11, a.term, null)), 'Unknown') as name,
                     group_concat(if(a.pos_x = 2, a.term, null)) as pid,
@@ -136,7 +141,11 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-    select name, concat(format(avg(_value) / 1024, 2), 'MB') as _value, concat(round(avg(value), 2), '%') as value from autoget_data_memtime
+        select
+            name,
+            concat(format(avg(_value) / 1024, 2), 'MB') as _value,
+            concat(round(avg(value), 2), '%') as value
+        from autoget_data_memtime
         where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
         group by name
     ";

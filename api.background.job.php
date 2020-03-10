@@ -43,7 +43,8 @@ $device_actions = array(
 	"hotfix",
 	"portmap",
 	"network",
-    "user"
+    "user",
+    "software"
 );
 
 $bind = false;
@@ -193,6 +194,15 @@ if(in_array($action, $device_actions)) {
             case "network":
                 // get network data (zabbix)
                 $responses[] = get_web_page(get_route_link("api.network.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background"
+                ));
+                break;
+                
+            case "software":
+                // get memory total
+                $responses[] = get_web_page(get_route_link("api.software.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"

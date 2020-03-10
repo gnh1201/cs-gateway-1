@@ -122,7 +122,7 @@ switch($type) {
         );
         $sql = "
             select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
-                select device_id,  max(`load`) as `load` from `autoget_data_cpu`
+                select device_id,  max(`load`) as `load` from `autoget_data_cpu.zabbix`
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
             ) a, autoget_devices b where a.device_id = b.id and `load` < 100 order by `load` desc limit 10
@@ -140,11 +140,11 @@ switch($type) {
         );
         $sql = "
             select a.device_id as device_id, b.computer_name as device_name, a.`load` as `load` from (
-                select device_id, max(`load`) as `load` from `autoget_data_mem`
+                select device_id, max(`load`) as `load` from `autoget_data_mem.zabbix`
                     where basetime >= :start_dt and basetime <= :end_dt
                     group by device_id
             ) a, autoget_devices b where a.device_id = b.id and `load` < 100 order by `load` desc limit 10
-        ";;
+        ";
         $rows = exec_db_fetch_all($sql, $bind);
         $_data['memlasts'] = $rows;
 
