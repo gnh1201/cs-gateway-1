@@ -17,8 +17,6 @@ $assets = itsm_get_data("assets");
 $licenses = itsm_get_data("licenses");
 $credentials = itsm_get_data("credentials");
 
-//write_debug_log(json_encode($credentials));
-
 $_data = array();
 
 switch($type) {
@@ -56,7 +54,8 @@ switch($type) {
 
             // get number of licenses
             foreach($licenses as $license) {
-                if($client->id == $license->clientid) {
+                $clientids = explode(",", $license->clientids);
+                if(in_array($client->id, $clientids)) {
                     $num_licenses++;
                 }
             }

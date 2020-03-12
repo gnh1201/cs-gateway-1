@@ -120,31 +120,43 @@ if($mode == "background") {
             exec_db_query($_sql, $_bind);
         }
     }
-    
     $data['success'] = true;
 } elseif($mode == "itsm.import") {
-    $bind = array(
-        "device_id" => $device_id
-    );
-    $sql = get_bind_to_sql_select($tablename, $bind);
-    $rows = exec_db_fetch_all($sql, $bind);
-    foreach($rows as $row) {
-        $tag = sprintf("ITLD-%s-%x", $device_id, crc32($row['name']));
-        itsm_add_data("licenses", array(
-            "clientid" => 1,
-            "statusid" => 1,
-            "categoryid" => 4,
-            "supplierid" => 3,
-            "seats" => 1,
-            "tag" => $tag,
-            "name" => $row['name'],
-            "serial" => "",
-            "notes" => "",
-            "qrvalue" => "",
-        ));
+    $assetid = $device['itsm_assetid'];
+    if(empty($assetid)) {
+        $data['success'] = false;
+        $data['message'] = "assetid not setted";
+    } else {
+        $bind = array(
+            "device_id" => $device_id
+        );
+        $sql = get_bind_to_sql_select($tablename, $bind);
+        $rows = exec_db_fetch_all($sql, $bind);
+        foreach($rows as $row) {
+            $categoryid = 4;
+            if($device['platform'] == "windows") {
+                $categoryid = 5;
+            } elseif($device['platform'] == "linux") {
+                $categoryid = 6;
+            }
+
+            $tag = sprintf("ITL-%x", crc32($row['name']));
+            $result = itsm_add_data("licenses", array(
+                "assetid" => $assetid,
+                "clientid" => 1,
+                "statusid" => 1,
+                "categoryid" => $categoryid,
+                "supplierid" => 3,
+                "seats" => 1,
+                "tag" => $tag,
+                "name" => $row['name'],
+                "serial" => "",
+                "notes" => "",
+                "qrvalue" => "",
+            ));
+        }
+        $data['success'] = true;
     }
-    
-    $data['success'] = true;
 } else {
     $bind = array(
         "device_id" => $device_id

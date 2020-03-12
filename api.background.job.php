@@ -45,7 +45,9 @@ $device_actions = array(
 	"network",
     "user",
     "software",
-    "software.import"
+    "software.import",
+    "lastlogin",
+    "lastlogin.import"
 );
 
 $bind = false;
@@ -213,6 +215,22 @@ if(in_array($action, $device_actions)) {
             case "software.import":
                 // get memory total
                 $responses[] = get_web_page(get_route_link("api.software.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "itsm.import"
+                ));
+                break;
+                
+            case "lastlogin":
+                $responses[] = get_web_page(get_route_link("api.lastlogin.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "background"
+                ));
+                break;
+            
+            case "lastlogin.import":
+                $responses[] = get_web_page(get_route_link("api.lastlogin.json"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "itsm.import"
