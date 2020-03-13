@@ -178,7 +178,7 @@ if(in_array($action, $device_actions)) {
                 
             case "portmap":
                 // get disk usage
-                $responses[] = get_web_page(get_route_link("api.portmap.dot"), "get", array(
+                $responses[] = get_web_page(get_route_link("api.portmap2.dot"), "get", array(
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
