@@ -280,7 +280,17 @@ if($mode == "background") {
                     }
                 }
 
-                $relations[] = array($row['port'], $hostname, "");
+                $connected = 0;
+                foreach($relations as $k=>$rel) {
+                    if($rel[0] == $row['port'] && $rel[1] == $hostname) {
+                        $connected++;
+                    }
+                }
+
+                if($connected == 0) {
+                    $relations[] = array($row['port'], $hostname, "");
+                }
+
                 $nodes[] = $hostname;
             }
         }
@@ -301,7 +311,6 @@ if($mode == "background") {
         $nodestyles = array();
 
         $computer_name = str_replace(array(" ", "-"), "_", $device['computer_name']);
-
         $nodes[] = $computer_name;
         $nodestyles[$computer_name] = array("fontcolor" => "white", "color" => "red");
         $nodes[] = "TCP6";
@@ -311,21 +320,27 @@ if($mode == "background") {
         $relations[] = array($computer_name, "TCP6", "");
         $relations[] = array($computer_name, "TCP", "");
 
-        $sql = "select a.port as port, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a group by a.port";
+        $sql = "select a.port as port, a.process_name as process_name, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a group by a.port";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
             $addresses = explode(",", $row['addresses']);
             $nodes[] = $row['port'];
             $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
+            
+            $process_name = pathinfo(str_replace(array(" ", "-"), "_", $row['process_name']), PATHINFO_FILENAME);
+            $nodes[] = $process_name;
 
             $ipversion = "TCP";
             foreach($addresses as $address) {
-                if(strpos(":", $address) !== false) {
+                $ipv6_seperated = explode(":", $address);
+                if(count($ipv6_seperated) > 1) {
                     $ipversion = "TCP6";
+                    break;
                 }
             }
 
             $relations[] = array($ipversion, $row['port'], "");
+            $relations[] = array($row['port'], $process_name, "");
         }
 
         $data = array(
