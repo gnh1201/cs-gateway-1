@@ -54,7 +54,7 @@ if($mode == "background") {
     if($device['platform'] == "windows") {
         $bind = array(
             "device_id" => $device_id,
-            "command_id" => 55
+            "command_id" => 57
         );
         $sql = get_bind_to_sql_select("autoget_sheets", $bind, array(
             "setwheres" => array(
@@ -63,21 +63,42 @@ if($mode == "background") {
             )
         ));
         $_tbl1 = exec_db_temp_start($sql, $bind);
-
+        
         $sql = "
             select
-                group_concat(if(a.pos_x >= 3, a.term, null) order by a.pos_x asc separator ' ') as name
+                group_concat(if(a.pos_x = 1, a.term, null)) as name,
+                group_concat(if(a.pos_x >= 3, a.term, null) order by a.pos_x asc separator ' ') as value
             from $_tbl1 a
             group by pos_y, datetime
+            order by datetime desc, pos_y asc
         ";
-        $rows = exec_db_fetch_all($sql);
+        $rows = exec_db_fetch_all($sql, $bind);
+        
+        $lines = array();
+        $words = false;
         foreach($rows as $row) {
+            if($row['name'] == "DisplayName") {
+                if($words !== false) $lines[] = $words;
+                $words = array("name" => "", "datetime" => "");
+            }
+
+            switch($row['name']) {
+                case "DisplayName":
+                    $words['name'] = $row['value'];
+                    break;
+                case "InstallDate":
+                    $words['datetime'] = sprintf("%s-%s-%s 00:00:00", substr($row['value'], 0, 4), substr($row['value'], 4, 2), substr($row['value'], 6, 2));
+                    break;
+            }
+        }
+
+        foreach($lines as $row) {
             $_bind = array(
                 "device_id" => $device_id,
                 "platform" => "windows",
                 "name" => $row['name'],
                 "version" => "Not supported",
-                "datetime" => $start_dt
+                "datetime" => $row['datetime']
             );
             $_sql = get_bind_to_sql_insert($tablename, $_bind, array(
                 "setkeys" => array("device_id", "name", "platform")
@@ -153,6 +174,8 @@ if($mode == "background") {
                 "serial" => "",
                 "notes" => "",
                 "qrvalue" => "",
+            ), array(
+                1 => $row['datetime']
             ));
         }
         $data['success'] = true;

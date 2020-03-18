@@ -139,6 +139,8 @@ if($mode == "background") {
                     "assetid" => $assetid,
                     "username" => $row['username'],
                     "last" => $row['last']
+                ), array(
+                    1 => $row['last']
                 ));
             }
         }

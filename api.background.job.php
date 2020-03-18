@@ -44,6 +44,7 @@ $device_actions = array(
 	"portmap",
 	"network",
     "user",
+    "user.import",
     "software",
     "software.import",
     "lastlogin",
@@ -191,6 +192,15 @@ if(in_array($action, $device_actions)) {
                     "device_id" => $device['id'],
                     "adjust" => $adjust,
                     "mode" => "background"
+                ));
+                break;
+
+            case "user.import":
+                // get user data
+                $responses[] = get_web_page(get_route_link("api.user.json"), "get", array(
+                    "device_id" => $device['id'],
+                    "adjust" => $adjust,
+                    "mode" => "itsm.import"
                 ));
                 break;
 
