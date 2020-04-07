@@ -46,6 +46,7 @@ get_web_page(get_route_link("api.hosts.json"), "get");
 get_web_page(get_route_link("api.agent.init"), "get");
 
 // step 4: change status to idle
+/*
 $bind = false;
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
 $rows = exec_db_fetch_all($sql, $bind); 
@@ -67,8 +68,29 @@ foreach($rows as $row) {
         }
     }
 }
+*/
+
+$bind = false;
+$sql = get_bind_to_sql_select("autoget_data_hosts.view2", $bind);
+$rows = exec_db_fetch_all($sql, $bind);
+foreach($rows as $row) {
+    $assetips = explode(",", $row['assetip']);
+    if(!in_array($row['hostip'], $assetips)) {
+        $_rows = itsm_get_data("assets", array(
+            "id" => $row['assetid'],
+            "statusid" => 1
+        ));
+        foreach($_rows as $_row) {
+            $responses[] = itsm_edit_data("assets", array(
+                "id" => $_row->id,
+                "statusid" => "2"
+            ));
+        }
+    }
+}
 
 $data['success'] = true;
+$data['responses'] = $responses;
 
 header("Content-Type: application/json");
 echo json_encode($data);

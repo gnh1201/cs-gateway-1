@@ -36,9 +36,7 @@ $data = array(
 
 if($mode == "table.insert") {
     // get active devices
-    $bind = array(
-        "platform" => "windows"
-    );
+    $bind = false;
     $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
         "setwheres" => array(
             array("and", array("gte", "last", $start_dt)),
@@ -116,9 +114,7 @@ if($mode == "make.excel") {
         }
 
         // get active devices
-        $bind = array(
-            "platform" => "windows"
-        );
+        $bind = false;
         $sql = get_bind_to_sql_select("autoget_devices", $bind, array(
             "setwheres" => array(
                 array("and", array("gte", "last", $start_dt)),

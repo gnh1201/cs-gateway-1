@@ -14,7 +14,7 @@ if(empty($device_id)) {
 }
 
 if(empty($adjust)) {
-    $adjust = "-20m";
+    $adjust = "-30m";
 }
 
 if(empty($end_dt)) {
@@ -39,8 +39,28 @@ $bind = array(
 $sql = get_bind_to_sql_select("autoget_devices", $bind);
 $device = exec_db_fetch($sql, $bind);
 
+// create table
+$tablename = exec_db_table_create(array(
+    "device_id" => array("int", 11),
+    "process_name" => array("varchar", 255),
+    "address" => array("varchar", 255),
+    "address_ex" => array("varchar", 255),
+    "port" => array("int", 11),
+    "port_ex" => array("int", 11),
+    "state" => array("varchar", 45),
+    "pid" => array("int", 11),
+    "flag_ipv6" => array("tinyint", 1),
+    "basetime" => array("datetime")
+), "autoget_data_portstate", array(
+    "suffix" => ".r6",
+    "setindex" => array(
+        "index_1" => array("device_id", "port"),
+        "index_2" => array("basetime")
+    )
+));
+
 if($mode == "background") {
-    $tablename = "";
+    $_tablename = "";
 
     if($device['platform'] == "windows") {
         // 1: tasklist (command_id = 1)
@@ -115,7 +135,7 @@ if($mode == "background") {
             from `$_tbl2` a left join `$_tbl1` b on a.pid = b.pid
         ";
         $_tbl3 = exec_db_temp_start($sql);
-        $tablename = $_tbl3;
+        $_tablename = $_tbl3;
     } elseif($device['platform'] == "linux") {
         // 4: netstat -ntp | grep -v 127.0.0.1 | grep -v ::1 (command_id = 4)
         $bind = false;
@@ -156,38 +176,23 @@ if($mode == "background") {
             ) a
         ";
         $_tbl1 = exec_db_temp_start($sql);
-        $tablename = $_tbl1;
+        $_tablename = $_tbl1;
     }
 
     // detect IPv6
-    $sql = "select a.*, IF(INSTR(a.address, ':') > 0 or INSTR(a.address_ex, ':') > 0, 1, 0) as flag_ipv6 from $tablename a";
+    $sql = "select a.*, IF(INSTR(a.address, ':') > 0 or INSTR(a.address_ex, ':') > 0, 1, 0) as flag_ipv6 from $_tablename a";
     $rows = exec_db_fetch_all($sql);
-
-    // create table
-    $tablename = exec_db_table_create(array(
-        "device_id" => array("int", 11),
-        "process_name" => array("varchar", 255),
-        "address" => array("varchar", 255),
-        "address_ex" => array("varchar", 255),
-        "port" => array("int", 11),
-        "port_ex" => array("int", 11),
-        "state" => array("varchar", 45),
-        "pid" => array("int", 11),
-        "flag_ipv6" => array("tinyint", 1),
-        "basetime" => array("datetime")
-    ), "autoget_data_portstate", array(
-        "suffix" => ".r5",
-        "setindex" => array(
-            "index_1" => array("device_id", "port"),
-            "index_2" => array("basetime")
-        )
-    ));
 
     $bulkid = exec_db_bulk_start();
     foreach($rows as $row) {
+        $process_name = trim($row['process_name']);
+        if(empty($process_name) || $process_name == '-') {
+            $process_name = "Unknown";
+        }
+
         $bind = array(
             "device_id" => $device_id,
-            "process_name" => $row['process_name'],
+            "process_name" => $process_name,
             "address" => $row['address'],
             "address_ex" => $row['address_ex'],
             "port" => $row['port'],
@@ -206,35 +211,56 @@ if($mode == "background") {
     echo json_encode($data);
 } else {
     $bind = false;
-    $sql = get_bind_to_sql_select("autoget_data_portstate.r5", $bind, array(
+    $sql = get_bind_to_sql_select($tablename, $bind, array(
         "setwheres" => array(
             array("and", array("eq", "device_id", $device_id)),
             array("and", array("lte", "basetime", $end_dt)),
             array("and", array("gte", "basetime", $start_dt)),
-            array("and", array("in", "state", array("ESTABLISHED", "LISTENING", "TIME_WAIT")))
+            array("and", array("in", "state", array("ESTABLISHED", "LISTENING", "LISTEN")))
         )
     ));
-    $_tbl5 = exec_db_temp_start($sql, $bind);
+    $_tbl5 = exec_db_temp_start($sql, $bind)
+
+    // # About port range
+    //   * 0:1023 = well-known port
+    //   * 1024:49151 = registered port
+    //   * 49152:65535 = dynamic port
 
     $sql = "
         select
             a.device_id as device_id,
             if(a.process_name is null or a.process_name = '' or a.process_name = '-', 'Unknown', a.process_name) as process_name,
             a.address_ex as address,
-            if(a.port < a.port_ex or port_ex = 0, a.port, a.port_ex) as port,
+            a.port as port,
             a.state as state,
             a.flag_ipv6 as flag_ipv6,
             a.pid as pid
-        from $_tbl5 a
+        from $_tbl5 a where a.port < 49152
     ";
     $_tbl6 = exec_db_temp_start($sql);
 
     if($type == "datatables") {
-        $sql = "select * from $_tbl6 a where a.state in ('ESTABLISHED', 'TIME_WAIT') group by port, pid, flag_ipv6";
+        //$sql = "select * from $_tbl6 a where a.state in ('ESTABLISHED') group by port, pid, flag_ipv6";
+        $sql = "select *, count(distinct pid) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by port, address";
         $rows = exec_db_fetch_all($sql);
         $_rows = array();
         foreach($rows as $row) {
-            $rowid_values = array($row['device_id'], $row['process_name'], $row['address'], $row['port'], $row['state'], $row['pid']);
+            $hostname = $row['address'];
+
+            $__bind = array(
+                "hostip" => $hostname
+            );
+            $__sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $__bind);
+            $__rows = exec_db_fetch_all($__sql, $__bind);
+            foreach($__rows as $__row) {
+                    $hostname = str_replace(array(" ", "-"), "_", $__row['hostname']);
+                    break;
+            }
+            
+            $row['hostname'] = $hostname;
+
+            $rowid_values = array($row['device_id'], $row['process_name'], $row['address'], $row['hostname'], $row['cnt'], $row['port'], $row['pid']);
+            //$rowid_values = array($row['device_id'], $row['process_name'], $hostname, $row['port'], $row['state'], $row['pid']);
             $rowid = get_hashed_text(implode(",", $rowid_values));
             $row = array_merge(array("rowid" => $rowid), $row);
             $_rows[] = $row;
@@ -245,13 +271,14 @@ if($mode == "background") {
         header("Content-Type: application/json");
         echo json_encode($data);
     }
-    
+
     if($type == "datatables.ipversion") {
-        $sql = "select * from $_tbl6 a where a.state ='LISTENING' group by port, pid, flag_ipv6";
+        //$sql = "select * from $_tbl6 a where a.state in ('LISTENING', 'LISTEN') group by port, pid, flag_ipv6";
+        $sql = "select *, if(a.flag_ipv6 = 1, 'TCP6', 'TCP4') as protocol, count(a.port) as cnt from $_tbl6 a where a.state in ('LISTENING', 'LISTEN') group by a.port, a.flag_ipv6";
         $rows = exec_db_fetch_all($sql);
         $_rows = array();
         foreach($rows as $row) {
-            $rowid_values = array($row['device_id'], $row['process_name'], $row['address'], $row['port'], $row['state'], $row['pid']);
+            $rowid_values = array($row['device_id'], $row['process_name'], $row['port'], $row['protocol'], $row['pid']);
             $rowid = get_hashed_text(implode(",", $rowid_values));
             $row = array_merge(array("rowid" => $rowid), $row);
             $_rows[] = $row;
@@ -272,8 +299,25 @@ if($mode == "background") {
 
         $nodes[] = $computer_name;
         $nodestyles[$computer_name] = array("fontcolor" => "white", "color" => "red");
+        
+        $sql = "select a.port as port, a.address as address, count(distinct a.pid) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by a.port, a.address";
+        $rows = exec_db_fetch_all($sql);
+        foreach($rows as $row) {
+            if(!in_array($row['port'], $nodes)) {
+                $nodes[] = $row['port'];
+                $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
+                $relations[] = array($computer_name, $row['port'], "");
+            }
 
-        $sql = "select a.port as port, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a where a.state in ('ESTABLISHED', 'TIME_WAIT') group by a.port";
+            if(!in_array($row['address'], $nodes)) {
+                $nodes[] = $row['address'];
+            }
+            
+            $relations[] = array($row['port'], $row['address'], $row['cnt']);
+        }
+
+/*
+        $sql = "select a.port as port, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by a.port";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
             $addresses = explode(",", $row['addresses']);
@@ -284,15 +328,13 @@ if($mode == "background") {
                 $hostname = $address;
 
                 $_bind = array(
-                    "hostip" => $ip
+                    "hostip" => $hostname
                 );
-                $_sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $bind);
+                $_sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $_bind);
                 $_rows = exec_db_fetch_all($_sql, $_bind);
                 foreach($_rows as $_row) {
-                    if(!empty($_row['hostname'])) {
                         $hostname = str_replace(array(" ", "-"), "_", $_row['hostname']);
                         break;
-                    }
                 }
 
                 $connected = 0;
@@ -309,6 +351,7 @@ if($mode == "background") {
                 $nodes[] = $hostname;
             }
         }
+*/
 
         $data = array(
             "relations" => $relations,
@@ -335,15 +378,19 @@ if($mode == "background") {
         $relations[] = array($computer_name, "TCP6", "");
         $relations[] = array($computer_name, "TCP", "");
 
-        $sql = "select a.port as port, a.process_name as process_name, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a where a.state = 'LISTENING' group by a.port, a.flag_ipv6";
+        $sql = "select a.port as port, a.process_name as process_name, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a where a.state in ('LISTENING', 'LISTEN') group by a.port, a.flag_ipv6";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
             $addresses = explode(",", $row['addresses']);
-            $nodes[] = $row['port'];
-            $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
-            
+            //$nodes[] = $row['port'];
+            //$nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
+
             $process_name = pathinfo(str_replace(array(" ", "-"), "_", $row['process_name']), PATHINFO_FILENAME);
-            $nodes[] = $process_name;
+            //$nodes[] = $process_name;
+            
+            $nodekey = sprintf("%s:%s", $row['port'], $process_name);
+            $nodes[] = $nodekey;
+            $nodestyles[$nodekey] = array("fontcolor" => "white", "color" => "green");
 
             $ipversion = "TCP";
             foreach($addresses as $address) {
@@ -354,8 +401,9 @@ if($mode == "background") {
                 }
             }
 
-            $relations[] = array($ipversion, $row['port'], "");
-            $relations[] = array($row['port'], $process_name, "");
+            //$relations[] = array($ipversion, $row['port'], "");
+            //$relations[] = array($row['port'], $process_name, "");
+            $relations[] = array($ipversion, $nodekey, "");
         }
 
         $data = array(

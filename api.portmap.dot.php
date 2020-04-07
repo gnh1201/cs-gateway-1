@@ -206,9 +206,9 @@ if($mode == "background") {
         "end_dt" => $end_dt
     );
     $sql = "
-    select * from autoget_data_portstate
-        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
-        group by port
+        select * from autoget_data_portstate
+            where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
+            group by port
     ";
     write_common_log(get_db_binded_sql($sql, $bind));
 

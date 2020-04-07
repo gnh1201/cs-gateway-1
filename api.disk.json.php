@@ -203,7 +203,7 @@ if($mode == "background") {
 
     $sql = "select itemid, itemname, avg(value) as value from $tablename group by itemid";
     $_tbl1 = exec_db_temp_start($sql);
-    
+
     if(!empty($debug)) {
         $sql = "select * from $_tbl1";
         $rows = exec_db_fetch_all($sql);
