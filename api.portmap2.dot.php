@@ -219,12 +219,7 @@ if($mode == "background") {
             array("and", array("in", "state", array("ESTABLISHED", "LISTENING", "LISTEN")))
         )
     ));
-    $_tbl5 = exec_db_temp_start($sql, $bind)
-
-    // # About port range
-    //   * 0:1023 = well-known port
-    //   * 1024:49151 = registered port
-    //   * 49152:65535 = dynamic port
+    $_tbl5 = exec_db_temp_start($sql, $bind);
 
     $sql = "
         select
@@ -235,7 +230,7 @@ if($mode == "background") {
             a.state as state,
             a.flag_ipv6 as flag_ipv6,
             a.pid as pid
-        from $_tbl5 a where a.port < 49152
+        from $_tbl5 a where port < 49152
     ";
     $_tbl6 = exec_db_temp_start($sql);
 
@@ -303,6 +298,8 @@ if($mode == "background") {
         $sql = "select a.port as port, a.address as address, count(distinct a.pid) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by a.port, a.address";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
+            $hostname = $row['address'];
+            
             if(!in_array($row['port'], $nodes)) {
                 $nodes[] = $row['port'];
                 $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
@@ -310,10 +307,20 @@ if($mode == "background") {
             }
 
             if(!in_array($row['address'], $nodes)) {
-                $nodes[] = $row['address'];
+                $_bind = array(
+                    "hostip" => $hostname
+                );
+                $_sql = get_bind_to_sql_select("autoget_data_hosts.zabbix", $_bind);
+                $_rows = exec_db_fetch_all($_sql, $_bind);
+                foreach($_rows as $_row) {
+                        $hostname = str_replace(array(" ", "-"), "_", $_row['hostname']);
+                        break;
+                }
+
+                $nodes[] = $hostname;
             }
-            
-            $relations[] = array($row['port'], $row['address'], $row['cnt']);
+
+            $relations[] = array($row['port'], $hostname, $row['cnt']);
         }
 
 /*
