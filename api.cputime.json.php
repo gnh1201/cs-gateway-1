@@ -111,7 +111,11 @@ if($mode == "background") {
         "value" => array("float", "5,2"),
         "basetime" => array("datetime")
     ), "autoget_data_cputime", array(
-        "index_1" => array("device_id", "name", "basetime")
+        "suffix" => sprintf(".%s", date("Ymd")),
+        "setindex" => array(
+            "index_1" => array("device_id"),
+            "index_2" => array("basetime")
+        )
     ));
     
     // insert selected rows
@@ -132,17 +136,21 @@ if($mode == "background") {
     $data['success'] = true;
 } else {
     $bind = array(
-        "device_id" => $device_id,
-        "start_dt" => $start_dt,
-        "end_dt" => $end_dt
+        "device_id" => $device_id
     );
-    $sql = "
-    select name, concat(round(avg(value), 2), '%') as value from autoget_data_cputime
-        where device_id = :device_id and basetime >= :start_dt and basetime <= :end_dt
-        group by name
-    ";
+    $sql = get_bind_to_sql_select("autoget_data_cputime", $bind, array(
+        "setwheres"  => array(
+            array("and", array("gte", "datetime", $start_dt)),
+            array("and", array("lte", "datetime", $end_dt)),
+        ),
+        "setgroups" => array("name"),
+        "setcreatedtime" => array(
+            "end" => $end_dt,
+            "start" => get_current_datetime(array("now" => $end_dt, "adjust" => "-24h"))
+        )
+    ));
     $rows = exec_db_fetch_all($sql, $bind);
-    
+
     $data['success'] = true;
     $data['data'] = $rows;
 }

@@ -52,10 +52,11 @@ $tablename = exec_db_table_create(array(
     "flag_ipv6" => array("tinyint", 1),
     "basetime" => array("datetime")
 ), "autoget_data_portstate", array(
-    "suffix" => ".r6",
+    "suffix" => sprintf(".%s%02d", date("Ymd"), (3 * floor(date("H") / 3))),
     "setindex" => array(
-        "index_1" => array("device_id", "port"),
-        "index_2" => array("basetime")
+        "index_1" => array("device_id"),
+        "index_2" => array("port"),
+        "index_3" => array("basetime")
     )
 ));
 
@@ -211,12 +212,16 @@ if($mode == "background") {
     echo json_encode($data);
 } else {
     $bind = false;
-    $sql = get_bind_to_sql_select($tablename, $bind, array(
+    $sql = get_bind_to_sql_select("autoget_data_portstate", $bind, array(
         "setwheres" => array(
             array("and", array("eq", "device_id", $device_id)),
             array("and", array("lte", "basetime", $end_dt)),
             array("and", array("gte", "basetime", $start_dt)),
             array("and", array("in", "state", array("ESTABLISHED", "LISTENING", "LISTEN")))
+        ),
+        "setcreatedtime" => array(
+            "end" => $end_dt,
+            "start" => get_current_datetime(array("now" => $end_dt, "adjust" => "-3h"))
         )
     ));
     $_tbl5 = exec_db_temp_start($sql, $bind);
@@ -303,7 +308,8 @@ if($mode == "background") {
             if(!in_array($row['port'], $nodes)) {
                 $nodes[] = $row['port'];
                 $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
-                $relations[] = array($computer_name, $row['port'], "");
+                //$relations[] = array($computer_name, $row['port'], "");
+                $relations[] = array($row['port'], $computer_name);
             }
 
             if(!in_array($row['address'], $nodes)) {
@@ -320,7 +326,8 @@ if($mode == "background") {
                 $nodes[] = $hostname;
             }
 
-            $relations[] = array($row['port'], $hostname, $row['cnt']);
+            //$relations[] = array($row['port'], $hostname, $row['cnt']);
+            $relations[] = array($hostname, $row['port'], $row['cnt']);
         }
 
 /*
@@ -382,8 +389,10 @@ if($mode == "background") {
         $nodestyles['TCP6'] = array("color" => "yellow");
         $nodes[] = "TCP";
         $nodestyles['TCP'] = array("color" => "yellow");
-        $relations[] = array($computer_name, "TCP6", "");
-        $relations[] = array($computer_name, "TCP", "");
+        //$relations[] = array($computer_name, "TCP6", "");
+        //$relations[] = array($computer_name, "TCP", "");
+        $relations[] = array("TCP6", $computer_name, "");
+        $relations[] = array("TCP", $computer_name, "");
 
         $sql = "select a.port as port, a.process_name as process_name, group_concat(distinct a.address) as addresses, count(a.port) as cnt from $_tbl6 a where a.state in ('LISTENING', 'LISTEN') group by a.port, a.flag_ipv6";
         $rows = exec_db_fetch_all($sql);
@@ -410,7 +419,9 @@ if($mode == "background") {
 
             //$relations[] = array($ipversion, $row['port'], "");
             //$relations[] = array($row['port'], $process_name, "");
-            $relations[] = array($ipversion, $nodekey, "");
+            
+            //$relations[] = array($ipversion, $nodekey, "");
+            $relations[] = array($nodekey, $ipversion, "");
         }
 
         $data = array(
