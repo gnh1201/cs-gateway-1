@@ -140,8 +140,8 @@ if($mode == "background") {
     );
     $sql = get_bind_to_sql_select("autoget_data_cputime", $bind, array(
         "setwheres"  => array(
-            array("and", array("gte", "datetime", $start_dt)),
-            array("and", array("lte", "datetime", $end_dt)),
+            array("and", array("gte", "basetime", $start_dt)),
+            array("and", array("lte", "basetime", $end_dt)),
         ),
         "setgroups" => array("name"),
         "setcreatedtime" => array(
@@ -149,6 +149,7 @@ if($mode == "background") {
             "start" => get_current_datetime(array("now" => $end_dt, "adjust" => "-24h"))
         )
     ));
+
     $rows = exec_db_fetch_all($sql, $bind);
 
     $data['success'] = true;
