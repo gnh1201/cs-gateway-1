@@ -14,7 +14,8 @@ $type = get_requested_value("type");
 // get data from itsm server
 $clients = itsm_get_data("clients");
 $assets = itsm_get_data("assets");
-$licenses = itsm_get_data("licenses");
+//$licenses = itsm_get_data("licenses");
+$license_assets = itsm_get_data("license_assets");
 $credentials = itsm_get_data("credentials");
 
 $_data = array();
@@ -49,21 +50,22 @@ switch($type) {
                             $num_os_oth++;
                         }
                     }
-                }
-            }
 
-            // get number of licenses
-            foreach($licenses as $license) {
-                $clientids = explode(",", $license->clientids);
-                if(in_array($client->id, $clientids)) {
-                    $num_licenses++;
-                }
-            }
+                    // get number of credentials
+                    foreach($credentials as $credential) {
+                        if($asset->id == $credential->assetid) {
+                            $num_credentials++;
+                        }
+                    }
 
-            // get number of credentials
-            foreach($credentials as $credential) {
-                if($client->id == $credential->clientid) {
-                    $num_credentials++;
+                    // get number of licenses
+                    /*
+                    foreach($license_assets as $license_asset) {
+                        if($asset->id == $license_asset->assetid) {
+                            $num_licenses++;
+                        }
+                    }
+                    */
                 }
             }
 

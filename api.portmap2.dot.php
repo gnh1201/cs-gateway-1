@@ -234,14 +234,58 @@ if($mode == "background") {
             a.port as port,
             a.state as state,
             a.flag_ipv6 as flag_ipv6,
-            a.pid as pid
+            a.pid as pid,
+            a.basetime as basetime
         from $_tbl5 a where port < 49152
     ";
     $_tbl6 = exec_db_temp_start($sql);
 
+    if($type == "summary") {
+        $sql = "select count(distinct address) as num_address, count(distinct port) as num_port from $_tbl6 where state in ('ESTABLISHED')";
+        $row = exec_db_fetch($sql);
+        $num_address = $row['num_address'];
+        $num_port = $row['num_port'];
+
+        $sql = "select max(a.cnt) as cnt from (select count(*) as cnt from $_tbl6 where state in ('ESTABLISHED') group by basetime) a";
+        $row = exec_db_fetch($sql);
+        $num_connected = $row['cnt'];
+
+        $data['success'] = true;
+        $data['data'] = array(
+            array(
+                "num_address" => $num_address,
+                "num_port" => $num_port,
+                "num_connected" => $num_connected
+            )
+        );
+
+        header("Content-Type: application/json");
+        echo json_encode($data);
+    }
+
+    if($type == "summary.ipversion") {
+        $sql = "
+            select
+                count(if(a.protocol = 'TCP4', 1, null)) as num_tcp4,
+                count(if(a.protocol = 'TCP6', 1, null)) as num_tcp6
+            from (
+                select *, if(a.flag_ipv6 = 1, 'TCP6', 'TCP4') as protocol, count(a.port) as cnt from $_tbl6 a where a.state in ('LISTENING', 'LISTEN') group by a.port, a.flag_ipv6
+            ) a
+        ";
+        $rows = exec_db_fetch_all($sql);
+        
+        $data['success'] = true;
+        $data['data'] = $rows;
+
+        header("Content-Type: application/json");
+        echo json_encode($data);
+    }
+
     if($type == "datatables") {
-        //$sql = "select * from $_tbl6 a where a.state in ('ESTABLISHED') group by port, pid, flag_ipv6";
-        $sql = "select *, count(distinct pid) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by port, address";
+        $sql = "select a.pid as pid, max(a.cnt) as cnt  from (select pid, basetime, count(pid) as cnt from $_tbl6 where state in ('ESTABLISHED') group by pid, basetime) a group by a.pid";
+        $_tbl7 = exec_db_temp_start($sql);
+
+        $sql = "select a.*, b.cnt as cnt from $_tbl6 a, $_tbl7 b where a.pid = b.pid and a.state in ('ESTABLISHED') group by a.pid, a.port, a.address";
         $rows = exec_db_fetch_all($sql);
         $_rows = array();
         foreach($rows as $row) {
@@ -267,6 +311,7 @@ if($mode == "background") {
         }
         $rows = $_rows;
 
+        $data['success'] = true;
         $data['data'] = $rows;
         header("Content-Type: application/json");
         echo json_encode($data);
@@ -300,11 +345,14 @@ if($mode == "background") {
         $nodes[] = $computer_name;
         $nodestyles[$computer_name] = array("fontcolor" => "white", "color" => "red");
         
-        $sql = "select a.port as port, a.address as address, count(distinct a.pid) as cnt from $_tbl6 a where a.state in ('ESTABLISHED') group by a.port, a.address";
+        $sql = "select a.pid as pid, max(a.cnt) as cnt  from (select pid, basetime, count(pid) as cnt from $_tbl6 group by pid, basetime) a group by a.pid";
+        $_tbl7 = exec_db_temp_start($sql);
+
+        $sql = "select a.*, b.cnt as cnt from $_tbl6 a, $_tbl7 b where a.pid = b.pid and a.state in ('ESTABLISHED') group by a.pid, a.port, a.address";
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
             $hostname = $row['address'];
-            
+
             if(!in_array($row['port'], $nodes)) {
                 $nodes[] = $row['port'];
                 $nodestyles[$row['port']] = array("fontcolor" => "white", "color" => "green");
