@@ -76,6 +76,7 @@ $rows = exec_db_fetch_all($sql, $bind);
 foreach($rows as $row) {
     $assetips = explode(",", $row['assetip']);
     if(!in_array($row['hostip'], $assetips)) {
+        // Use -> Idle
         $_rows = itsm_get_data("assets", array(
             "id" => $row['assetid'],
             "statusid" => 1
@@ -84,6 +85,18 @@ foreach($rows as $row) {
             $responses[] = itsm_edit_data("assets", array(
                 "id" => $_row->id,
                 "statusid" => "2"
+            ));
+        }
+    } else {
+        // Idle -> New
+        $_rows = itsm_get_data("assets", array(
+            "id" => $row['assetid'],
+            "statusid" => 2
+        ));
+        foreach($_rows as $_row) {
+            $responses[] = itsm_edit_data("assets", array(
+                "id" => $_row->id,
+                "statusid" => "4"
             ));
         }
     }

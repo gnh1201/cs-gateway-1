@@ -26,10 +26,10 @@ $tablename = exec_db_table_create(array(
 ), "autoget_items", array(
     "suffix" => ".float.zabbix",
     "setindex" => array(
-        "index_1" => array("hostid", "itemid", "datetime"),
+        "index_1" => array("itemid", "datetime"),
         "index_2" => array("datetime")
     )
-));
+);
 
 if($mode == "background") {
     zabbix_authenticate();
@@ -46,8 +46,7 @@ if($mode == "background") {
         foreach($items as $item) {
             if(in_array($item->name, $itemnames)) {
                 $bind = array(
-                    "hostid" => $host->hostid,
-                    "itemid" => $item->itemid
+                    "hostid" => $host->hostid
                 );
                 $options = array(
                     "getcount" => true
@@ -71,7 +70,7 @@ if($mode == "background") {
 
                 if($_value > 0) {
                     $sql = get_bind_to_sql_update($tablename, $bind, array(
-                        "setkeys" => array("hostid", "itemid")
+                        "setkeys" => array("itemid")
                     ));
                     exec_db_query($sql, $bind);
                 } else {
@@ -109,13 +108,13 @@ if($mode == "background") {
         
         $bind = false;
         $options = array(
-            "fieldnames" => array("hostname", "value"),
+            "fieldnames" => array("hostname", "value")
             "setwheres" => array(),
-            //"setlimit" => 10,
-            //"setpage" => 1,
-            //"setorders" => array(
-            //    array("desc", "value")
-            //)
+            "setlimit" => 10,
+            "setpage" => 1,
+            "setorders" => array(
+                array("desc", "value")
+            )
         );
 
         if(count($hostgroups) > 0) {
@@ -130,50 +129,20 @@ if($mode == "background") {
             $options['setwheres'][] = array("and", array("in", "hostnames", $hostnames));
         }
         
-        $_tablename = exec_db_temp_create(array(
-            "hostname" => array("varchar", 255),
-            "itemname" => array("varchar", 255),
-            "value" => array("float", "5,2")
-        ));
-        
-        $rows = array();
-        
         $sql = get_bind_to_sql_select($tablename, $bind, $options);
-        $_rows = exec_db_fetch_all($sql, $bind);
-        foreach($_rows as $_row) {
-            $value = $_row['value'];
-            if($_row['itemname'] == "CPU Usage") {
-                $value = 100 - $_row['value'];
-            }
-            
-            if($value <= 0) {
-                continue;
-            }
-
-            $bind = array(
-                "hostname" => $_row['hostname'],
-                "itemname" => $_row['itemname'],
-                "value" => $value
-            );
-            $sql = get_bind_to_sql_insert($_tablename, $bind);
-            exec_db_query($sql, $bind);
-        }
-        
-        $bind = false;
-        $sql = get_bind_to_sql_select($_tablename, $bind);
+        $rows = array();
         $_rows = exec_db_fetch_all($sql, $bind);
         $i = 0;
         foreach($_rows as $_row) {
             $i++;
             $rows[] = array($i, $_row['hostname'], $_row['value']);
-            if($i == 10) break;
         }
 
-        $data[] = array(
+        $data = array(
             "columns" => array(
                 array("text" => "Rank", "type" => "number"),
                 array("text" => "Hostname", "type" => "string"),
-                array("text" => "Value", "type" => "string")
+                array("text" => "Lastvalue", "type" => "string")
             ),
             "rows" => $rows,
             "type" => "table"

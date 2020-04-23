@@ -52,7 +52,7 @@ $tablename = exec_db_table_create(array(
     "flag_ipv6" => array("tinyint", 1),
     "basetime" => array("datetime")
 ), "autoget_data_portstate", array(
-    "suffix" => sprintf(".%s%02d", date("Ymd"), (3 * floor(date("H") / 3))),
+    "suffix" => sprintf(".%s", date("Ymd")),
     "setindex" => array(
         "index_1" => array("device_id"),
         "index_2" => array("port"),
@@ -221,7 +221,7 @@ if($mode == "background") {
         ),
         "setcreatedtime" => array(
             "end" => $end_dt,
-            "start" => get_current_datetime(array("now" => $end_dt, "adjust" => "-3h"))
+            "start" => get_current_datetime(array("now" => $end_dt, "adjust" => "-24h"))
         )
     ));
     $_tbl5 = exec_db_temp_start($sql, $bind);
@@ -352,6 +352,11 @@ if($mode == "background") {
         $rows = exec_db_fetch_all($sql);
         foreach($rows as $row) {
             $hostname = $row['address'];
+
+            // ipv6
+            if(strpos($hostname, '[') == 0) {
+                $hostname = trim($hostname, "[]");
+            }
 
             if(!in_array($row['port'], $nodes)) {
                 $nodes[] = $row['port'];

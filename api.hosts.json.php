@@ -12,6 +12,7 @@ $tablename = exec_db_table_create(array(
     "datetime" => array("datetime"),
     "last" => array("datetime")
 ), "autoget_data_hosts", array(
+    "before" => array("truncate"),
     "suffix" => ".zabbix",
     "setindex" => array(
         "index_1" => array("hostip", "hostid")
@@ -48,6 +49,7 @@ $tablename = exec_db_table_create(array(
     "datetime" => array("datetime"),
     "last" => array("datetime")
 ), "autoget_data_hosts", array(
+    "before" => array("truncate"),
     "suffix" => ".itsm",
     "setindex" => array(
         "index_1" => array("assetip", "assetid")
